@@ -1,4 +1,3 @@
-import React from 'react';
 import { Container, Typography, Box, TextField, Button, Paper } from '@mui/material';
 
 const Board = () => {

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Container, Typography, Box, Card, CardContent, Grid, Chip, Button } from '@mui/material';
 
 interface Job {
