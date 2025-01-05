@@ -1,7 +1,5 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ThemeProvider, CssBaseline } from '@mui/material';
-import { createTheme } from '@mui/material/styles';
+import { HashRouter as Router, Routes, Route } from 'react-router-dom';
+import { ThemeProvider, createTheme } from '@mui/material';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import About from './pages/About';
@@ -11,14 +9,6 @@ import Jobs from './pages/Jobs';
 import Board from './pages/Board';
 
 const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
-  },
   typography: {
     fontFamily: [
       '-apple-system',
@@ -35,17 +25,18 @@ const theme = createTheme({
 function App() {
   return (
     <ThemeProvider theme={theme}>
-      <CssBaseline />
       <Router>
-        <Navbar />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/notice" element={<Notice />} />
-          <Route path="/resources" element={<Resources />} />
-          <Route path="/jobs" element={<Jobs />} />
-          <Route path="/board" element={<Board />} />
-        </Routes>
+        <div>
+          <Navbar />
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/notice" element={<Notice />} />
+            <Route path="/resources" element={<Resources />} />
+            <Route path="/jobs" element={<Jobs />} />
+            <Route path="/board" element={<Board />} />
+          </Routes>
+        </div>
       </Router>
     </ThemeProvider>
   );

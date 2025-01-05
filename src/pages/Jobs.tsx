@@ -1,53 +1,64 @@
-import React from 'react';
-import {
-  Container,
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  Grid,
-  Chip,
-  Button,
-} from '@mui/material';
-import { Work as WorkIcon } from '@mui/icons-material';
+import { Container, Typography, Box, Card, CardContent, Grid, Chip, Button } from '@mui/material';
+
+interface Job {
+  id: number;
+  school: string;
+  position: string;
+  subject: string;
+  period: string;
+  status: string;
+}
 
 const Jobs = () => {
-  const jobs = [
+  const jobs: Job[] = [
     {
       id: 1,
-      school: '한국문화영상고등학교',
-      position: '기간제 교사',
-      subject: '관광',
-      period: '2024.10.30',
-      status: '모집중',
+      school: '서울관광고등학교',
+      position: '관광 교과 교사',
+      subject: '관광일반',
+      period: '2024-02-15 ~ 2024-03-15',
+      status: '접수중'
     },
     {
       id: 2,
-      school: '송곡관광고등학교',
-      position: '기간제 교사',
-      subject: '관광',
-      period: '2024.8.12',
-      status: '모집중',
+      school: '부산관광고등학교',
+      position: '관광 교과 교사',
+      subject: '관광영어',
+      period: '2024-02-01 ~ 2024-02-28',
+      status: '마감'
     },
     {
       id: 3,
-      school: '중경고등학교',
-      position: '기간제 교사',
-      subject: '관광',
-      period: '2024.2.2',
-      status: '마감',
-    },
+      school: '제주관광고등학교',
+      position: '관광 교과 교사',
+      subject: '호텔실무',
+      period: '2024-03-01 ~ 2024-03-31',
+      status: '예정'
+    }
   ];
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case '접수중':
+        return 'success';
+      case '마감':
+        return 'error';
+      case '예정':
+        return 'warning';
+      default:
+        return 'default';
+    }
+  };
 
   return (
     <Container>
-      <Box sx={{ py: 4 }}>
+      <Box sx={{ mt: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom>
-          채용소식
+          채용정보
         </Typography>
-        <Grid container spacing={3}>
+        <Grid container spacing={3} sx={{ mt: 2 }}>
           {jobs.map((job) => (
-            <Grid item xs={12} sm={6} md={4} key={job.id}>
+            <Grid item xs={12} key={job.id}>
               <Card>
                 <CardContent>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -56,23 +67,17 @@ const Jobs = () => {
                     </Typography>
                     <Chip
                       label={job.status}
-                      color={job.status === '모집중' ? 'primary' : 'default'}
+                      color={getStatusColor(job.status) as any}
                       size="small"
                     />
                   </Box>
-                  <Typography color="text.secondary" gutterBottom>
+                  <Typography gutterBottom>
                     {job.position} ({job.subject})
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    마감일: {job.period}
+                  <Typography color="textSecondary" gutterBottom>
+                    접수기간: {job.period}
                   </Typography>
-                  <Button
-                    variant="contained"
-                    startIcon={<WorkIcon />}
-                    sx={{ mt: 2 }}
-                    fullWidth
-                    disabled={job.status === '마감'}
-                  >
+                  <Button variant="contained" sx={{ mt: 2 }}>
                     상세보기
                   </Button>
                 </CardContent>

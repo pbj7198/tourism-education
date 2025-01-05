@@ -1,102 +1,63 @@
-import React, { useState } from 'react';
-import {
-  Container,
-  Box,
-  Typography,
-  TextField,
-  Button,
-  Paper,
-  Grid,
-} from '@mui/material';
-import { Send as SendIcon } from '@mui/icons-material';
+import React from 'react';
+import { Container, Typography, Box, TextField, Button, Paper } from '@mui/material';
 
 const Board = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    date: '2025.01.05',
-    shortQuestion: '',
-    detailedQuestion: '',
-  });
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Form submitted:', formData);
-    // 여기에 폼 제출 로직 추가
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    // 폼 제출 처리
   };
 
   return (
     <Container>
-      <Box sx={{ py: 4 }}>
+      <Box sx={{ mt: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom>
-          문의/신청 내역
+          문의하기
         </Typography>
-        <Paper elevation={3} sx={{ p: 4, mt: 3 }}>
+        <Paper elevation={3} sx={{ p: 3, mt: 2 }}>
           <form onSubmit={handleSubmit}>
-            <Grid container spacing={3}>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="연락처"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="이메일"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="단문 입력"
-                  name="shortQuestion"
-                  value={formData.shortQuestion}
-                  onChange={handleChange}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="상세 입력"
-                  name="detailedQuestion"
-                  multiline
-                  rows={4}
-                  value={formData.detailedQuestion}
-                  onChange={handleChange}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <Button
-                  type="submit"
-                  variant="contained"
-                  startIcon={<SendIcon />}
-                  size="large"
-                  fullWidth
-                >
-                  문의하기
-                </Button>
-              </Grid>
-            </Grid>
+            <TextField
+              fullWidth
+              label="이름"
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="이메일"
+              type="email"
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="연락처"
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="제목"
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="문의내용"
+              multiline
+              rows={4}
+              margin="normal"
+              required
+            />
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              size="large"
+              sx={{ mt: 3 }}
+              fullWidth
+            >
+              문의하기
+            </Button>
           </form>
         </Paper>
       </Box>

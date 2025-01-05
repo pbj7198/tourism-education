@@ -1,124 +1,100 @@
-import React, { useState } from 'react';
-import {
-  AppBar,
-  Toolbar,
-  Typography,
-  Button,
-  Container,
-  IconButton,
-  Drawer,
-  List,
-  ListItem,
-  ListItemText,
-  useTheme,
-  useMediaQuery,
-  Box,
-} from '@mui/material';
+import { AppBar, Toolbar, Typography, Button, Container, IconButton, Menu, MenuItem, useTheme, useMediaQuery } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import MenuIcon from '@mui/icons-material/Menu';
+import { useState } from 'react';
 
 const Navbar = () => {
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
 
   const menuItems = [
     { text: '소개', path: '/about' },
     { text: '공지사항', path: '/notice' },
-    { text: '임용자료', path: '/resources' },
-    { text: '채용소식', path: '/jobs' },
-    { text: '게시판', path: '/board' },
+    { text: '자료실', path: '/resources' },
+    { text: '채용정보', path: '/jobs' },
+    { text: '문의하기', path: '/board' },
   ];
-
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
-  };
-
-  const drawer = (
-    <List>
-      {menuItems.map((item) => (
-        <ListItem 
-          key={item.text} 
-          component={RouterLink} 
-          to={item.path}
-          onClick={handleDrawerToggle}
-          sx={{ 
-            textDecoration: 'none', 
-            color: 'inherit',
-            '&:hover': {
-              backgroundColor: 'rgba(0, 0, 0, 0.04)',
-            }
-          }}
-        >
-          <ListItemText primary={item.text} />
-        </ListItem>
-      ))}
-    </List>
-  );
 
   return (
     <AppBar position="static">
       <Container>
-        <Toolbar disableGutters>
-          {isMobile && (
-            <IconButton
-              color="inherit"
-              aria-label="open drawer"
-              edge="start"
-              onClick={handleDrawerToggle}
-              sx={{ mr: 2 }}
-            >
-              <MenuIcon />
-            </IconButton>
-          )}
-          
-          <Typography
-            variant="h6"
-            component={RouterLink}
-            to="/"
-            sx={{
+        <Toolbar>
+          <Typography 
+            variant="h6" 
+            component={RouterLink} 
+            to="/" 
+            style={{ 
+              textDecoration: 'none', 
+              color: 'white', 
               flexGrow: 1,
-              textDecoration: 'none',
-              color: 'inherit',
-              fontSize: isMobile ? '1rem' : '1.25rem',
-              whiteSpace: 'nowrap',
+              fontSize: isMobile ? '1rem' : '1.25rem'
             }}
           >
             한국관광교육연구회
           </Typography>
-
-          {!isMobile && (
-            <Box sx={{ display: 'flex', gap: 1 }}>
+          
+          {isMobile ? (
+            <>
+              <IconButton
+                size="large"
+                edge="end"
+                color="inherit"
+                aria-label="menu"
+                onClick={handleMenu}
+              >
+                <MenuIcon />
+              </IconButton>
+              <Menu
+                anchorEl={anchorEl}
+                anchorOrigin={{
+                  vertical: 'top',
+                  horizontal: 'right',
+                }}
+                keepMounted
+                transformOrigin={{
+                  vertical: 'top',
+                  horizontal: 'right',
+                }}
+                open={Boolean(anchorEl)}
+                onClose={handleClose}
+              >
+                {menuItems.map((item) => (
+                  <MenuItem 
+                    key={item.path}
+                    onClick={handleClose}
+                    component={RouterLink}
+                    to={item.path}
+                  >
+                    {item.text}
+                  </MenuItem>
+                ))}
+              </Menu>
+            </>
+          ) : (
+            <>
               {menuItems.map((item) => (
-                <Button
-                  key={item.text}
-                  color="inherit"
-                  component={RouterLink}
+                <Button 
+                  key={item.path}
+                  color="inherit" 
+                  component={RouterLink} 
                   to={item.path}
                 >
                   {item.text}
                 </Button>
               ))}
-            </Box>
+            </>
           )}
         </Toolbar>
       </Container>
-
-      <Drawer
-        variant="temporary"
-        anchor="left"
-        open={mobileOpen}
-        onClose={handleDrawerToggle}
-        ModalProps={{
-          keepMounted: true, // Better open performance on mobile.
-        }}
-        sx={{
-          display: { xs: 'block', sm: 'none' },
-          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: 240 },
-        }}
-      >
-        {drawer}
-      </Drawer>
     </AppBar>
   );
 };

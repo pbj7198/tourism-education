@@ -1,29 +1,30 @@
-import React from 'react';
-import { Container, Box, Typography, Paper } from '@mui/material';
+import { Container, Typography, Box, Paper } from '@mui/material';
 
 const About = () => {
   return (
     <Container>
-      <Box sx={{ py: 4 }}>
+      <Box sx={{ mt: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom>
-          한국관광교육연구회 소개
+          연구회 소개
         </Typography>
-        <Paper elevation={3} sx={{ p: 4, mt: 3 }}>
-          <Typography variant="body1" paragraph>
-            한국관광교육연구회는 특성화고등학교의 관광 교육 발전을 위해 설립된 교사 연구회입니다.
+        <Paper elevation={3} sx={{ p: 3, mt: 2 }}>
+          <Typography variant="h6" gutterBottom>
+            설립 목적
           </Typography>
           <Typography variant="body1" paragraph>
-            우리 연구회는 관광 교육의 질적 향상과 교사들의 전문성 개발을 위해 다양한 활동을 진행하고 있습니다.
+            한국관광교육연구회는 관광교육의 발전과 교사들의 전문성 향상을 위해 설립되었습니다.
           </Typography>
-          <Typography variant="body1" paragraph>
-            주요 활동:
+          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
+            주요 활동
           </Typography>
-          <ul>
-            <Typography component="li" variant="body1">교육과정 연구 및 개발</Typography>
-            <Typography component="li" variant="body1">교수학습 자료 공유</Typography>
-            <Typography component="li" variant="body1">교사 연수 및 워크샵 진행</Typography>
-            <Typography component="li" variant="body1">관광 산업 현장과의 연계 활동</Typography>
-          </ul>
+          <Typography variant="body1" component="div">
+            <ul>
+              <li>관광교육 관련 연구 및 세미나 개최</li>
+              <li>교사 역량 강화를 위한 워크샵 진행</li>
+              <li>관광교육 자료 개발 및 공유</li>
+              <li>회원 간 정보 교류 및 네트워킹</li>
+            </ul>
+          </Typography>
         </Paper>
       </Box>
     </Container>
