@@ -1,4 +1,3 @@
-import React from 'react';
 import { Container, Typography, Box, List, ListItem, ListItemText, Divider } from '@mui/material';
 
 interface Notice {
@@ -38,7 +37,7 @@ const Notice = () => {
         </Typography>
         <List>
           {notices.map((notice, index) => (
-            <React.Fragment key={notice.id}>
+            <div key={notice.id}>
               <ListItem>
                 <ListItemText
                   primary={notice.title}
@@ -46,7 +45,7 @@ const Notice = () => {
                 />
               </ListItem>
               {index < notices.length - 1 && <Divider />}
-            </React.Fragment>
+            </div>
           ))}
         </List>
       </Box>
