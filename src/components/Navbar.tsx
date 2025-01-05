@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { AppBar, Toolbar, Typography, Button, Container, IconButton, Menu, MenuItem, useTheme, useMediaQuery } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -24,10 +25,17 @@ const Navbar = () => {
     { text: '문의하기', path: '/board' },
   ];
 
+=======
+import { AppBar, Toolbar, Typography, Button, Container } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
+
+const Navbar = () => {
+>>>>>>> e32b90c9f4a2588929d334edda250700502f2e00
   return (
     <AppBar position="static">
       <Container>
         <Toolbar>
+<<<<<<< HEAD
           <Typography 
             variant="h6" 
             component={RouterLink} 
@@ -93,10 +101,24 @@ const Navbar = () => {
               ))}
             </>
           )}
+=======
+          <Typography variant="h6" component={RouterLink} to="/" style={{ textDecoration: 'none', color: 'white', flexGrow: 1 }}>
+            한국관광교육연구회
+          </Typography>
+          <Button color="inherit" component={RouterLink} to="/about">소개</Button>
+          <Button color="inherit" component={RouterLink} to="/notice">공지사항</Button>
+          <Button color="inherit" component={RouterLink} to="/resources">자료실</Button>
+          <Button color="inherit" component={RouterLink} to="/jobs">채용정보</Button>
+          <Button color="inherit" component={RouterLink} to="/board">문의하기</Button>
+>>>>>>> e32b90c9f4a2588929d334edda250700502f2e00
         </Toolbar>
       </Container>
     </AppBar>
   );
 };
 
+<<<<<<< HEAD
 export default Navbar; 
+=======
+export default Navbar;
+>>>>>>> e32b90c9f4a2588929d334edda250700502f2e00

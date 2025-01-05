@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 import React from 'react';
+=======
+>>>>>>> e32b90c9f4a2588929d334edda250700502f2e00
 import { Container, Typography, Box, TextField, Button, Paper } from '@mui/material';
 
 const Board = () => {
@@ -65,4 +68,8 @@ const Board = () => {
   );
 };
 
+<<<<<<< HEAD
 export default Board; 
+=======
+export default Board;
+>>>>>>> e32b90c9f4a2588929d334edda250700502f2e00

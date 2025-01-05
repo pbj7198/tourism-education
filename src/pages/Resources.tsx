@@ -68,4 +68,8 @@ const Resources = () => {
   );
 };
 
+<<<<<<< HEAD
 export default Resources; 
+=======
+export default Resources;
+>>>>>>> e32b90c9f4a2588929d334edda250700502f2e00
