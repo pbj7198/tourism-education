@@ -1,4 +1,4 @@
-import { Container, Typography, Box, List, ListItem, ListItemText, Divider } from '@mui/material';
+import { Container, Typography, Box, List, ListItem, ListItemText } from '@mui/material';
 
 interface Notice {
   id: number;
@@ -37,12 +37,11 @@ const Notice = () => {
         </Typography>
         <List>
           {notices.map((notice, index) => (
-            <ListItem key={notice.id}>
+            <ListItem key={notice.id} divider={index < notices.length - 1}>
               <ListItemText
                 primary={notice.title}
-                secondary={}
+                secondary={`${notice.date} | ${notice.author}`}
               />
-              {index < notices.length - 1 && <Divider />}
             </ListItem>
           ))}
         </List>
