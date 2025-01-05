@@ -37,15 +37,13 @@ const Notice = () => {
         </Typography>
         <List>
           {notices.map((notice, index) => (
-            <div key={notice.id}>
-              <ListItem>
-                <ListItemText
-                  primary={notice.title}
-                  secondary={}
-                />
-              </ListItem>
+            <ListItem key={notice.id}>
+              <ListItemText
+                primary={notice.title}
+                secondary={}
+              />
               {index < notices.length - 1 && <Divider />}
-            </div>
+            </ListItem>
           ))}
         </List>
       </Box>
