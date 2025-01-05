@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import { Container, Typography, Box, List, ListItem, ListItemText, Divider } from '@mui/material';
-=======
 import { Container, Typography, Box, List, ListItem, ListItemText } from '@mui/material';
->>>>>>> e32b90c9f4a2588929d334edda250700502f2e00
 
 interface Notice {
   id: number;
@@ -54,8 +50,4 @@ const Notice = () => {
   );
 };
 
-<<<<<<< HEAD
-export default Notice; 
-=======
 export default Notice;
->>>>>>> e32b90c9f4a2588929d334edda250700502f2e00

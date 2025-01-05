@@ -90,8 +90,4 @@ const Jobs = () => {
   );
 };
 
-<<<<<<< HEAD
-export default Jobs; 
-=======
 export default Jobs;
->>>>>>> e32b90c9f4a2588929d334edda250700502f2e00
