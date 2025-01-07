@@ -33,7 +33,9 @@ function App() {
             sx={{ 
               flexGrow: 1,
               minHeight: 'calc(100vh - 80px)',
-              marginTop: '80px',
+              marginTop: 0,
+              position: 'relative',
+              top: '80px'
             }}
           >
             <Routes>

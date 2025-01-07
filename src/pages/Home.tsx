@@ -12,6 +12,8 @@ const Home = () => {
         backgroundImage: 'url(/tourism-education/background.jpg)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
+        top: '-80px',
+        marginBottom: '-80px',
         '&::before': {
           content: '""',
           position: 'absolute',
