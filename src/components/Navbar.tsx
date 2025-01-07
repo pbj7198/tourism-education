@@ -17,10 +17,10 @@ const Navbar = () => {
   };
 
   const menuItems = [
-    { text: '소개', path: '/about' },
-    { text: '공지사항', path: '/notice' },
-    { text: '자료실', path: '/resources' },
-    { text: '채용정보', path: '/jobs' },
+    { text: '한국관광교육연구회 소개', path: '/about' },
+    { text: '연구회 공지사항', path: '/notice' },
+    { text: '관광교사 임용자료', path: '/resources' },
+    { text: '관광교사 채용소식', path: '/jobs' },
     { text: '문의하기', path: '/board' },
   ];
 
@@ -82,6 +82,10 @@ const Navbar = () => {
                     onClick={handleClose}
                     component={RouterLink}
                     to={item.path}
+                    sx={{
+                      fontSize: '0.9rem',
+                      padding: '10px 20px',
+                    }}
                   >
                     {item.text}
                   </MenuItem>
@@ -96,7 +100,7 @@ const Navbar = () => {
                   sx={{ 
                     color: '#fff',
                     mx: 1.5,
-                    fontSize: '0.95rem',
+                    fontSize: '0.9rem',
                     fontWeight: 400,
                     '&:hover': {
                       backgroundColor: 'rgba(255, 255, 255, 0.1)',
