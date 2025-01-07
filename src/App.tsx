@@ -1,6 +1,7 @@
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme, Box } from '@mui/material';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import Home from './pages/Home';
 import About from './pages/About';
 import Notice from './pages/Notice';
@@ -47,6 +48,7 @@ function App() {
               <Route path="/board" element={<Board />} />
             </Routes>
           </Box>
+          <Footer />
         </Box>
       </Router>
     </ThemeProvider>
