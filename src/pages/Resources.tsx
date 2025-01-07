@@ -1,169 +1,268 @@
-import { Container, Typography, Box, useTheme, useMediaQuery, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, Pagination } from '@mui/material';
-import DownloadIcon from '@mui/icons-material/Download';
-import VisibilityIcon from '@mui/icons-material/Visibility';
 import { useState } from 'react';
+import {
+  Container,
+  Typography,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Button,
+  Box,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  IconButton,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  SelectChangeEvent,
+} from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { useAuth } from '../contexts/AuthContext';
 
-// 임시 데이터
-const resources = [
-  {
-    id: 1,
-    title: '2024학년도 관광교사 임용시험 기출문제 해설',
-    author: '관리자',
-    date: '2024-03-20',
-    views: 156,
-    downloads: 89,
-    fileType: 'PDF'
-  },
-  {
-    id: 2,
-    title: '관광 교과 지도안 작성 예시자료',
-    author: '관리자',
-    date: '2024-03-15',
-    views: 142,
-    downloads: 76,
-    fileType: 'DOCX'
-  },
-  {
-    id: 3,
-    title: '관광 교과 수업자료 - 관광산업의 이해',
-    author: '관리자',
-    date: '2024-03-10',
-    views: 198,
-    downloads: 95,
-    fileType: 'PPT'
-  },
-  {
-    id: 4,
-    title: '2023학년도 관광교사 임용시험 면접 기출문제',
-    author: '관리자',
-    date: '2024-03-05',
-    views: 167,
-    downloads: 82,
-    fileType: 'PDF'
-  },
-  {
-    id: 5,
-    title: '관광 교과 교육과정 분석 자료',
-    author: '관리자',
-    date: '2024-03-01',
-    views: 145,
-    downloads: 68,
-    fileType: 'PDF'
-  }
-];
+interface ResourcePost {
+  id: number;
+  title: string;
+  content: string;
+  author: string;
+  date: string;
+  category: string;
+  views: number;
+  downloadUrl?: string;
+}
 
 const Resources = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const [page, setPage] = useState(1);
-  const itemsPerPage = 10;
+  const { user } = useAuth();
+  const [posts, setPosts] = useState<ResourcePost[]>([
+    {
+      id: 1,
+      title: '2024 관광교사 임용시험 기출문제 해설',
+      content: '기출문제 해설 내용...',
+      author: '관리자',
+      date: '2024-03-15',
+      category: '기출문제',
+      views: 128,
+      downloadUrl: '/files/2024_tourism_exam.pdf',
+    },
+    {
+      id: 2,
+      title: '관광 교과 지도안 예시',
+      content: '지도안 내용...',
+      author: '관리자',
+      date: '2024-03-10',
+      category: '교수학습자료',
+      views: 95,
+      downloadUrl: '/files/tourism_lesson_plan.pdf',
+    },
+  ]);
 
-  const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
-    setPage(value);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<ResourcePost | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editContent, setEditContent] = useState('');
+  const [editCategory, setEditCategory] = useState('');
+  const [editDownloadUrl, setEditDownloadUrl] = useState('');
+
+  const categories = [
+    '기출문제',
+    '교수학습자료',
+    '연구자료',
+    '수업자료',
+    '기타자료',
+  ];
+
+  const handleCreateClick = () => {
+    setSelectedPost(null);
+    setEditTitle('');
+    setEditContent('');
+    setEditCategory('');
+    setEditDownloadUrl('');
+    setIsDialogOpen(true);
   };
 
-  const getFileTypeColor = (fileType: string) => {
-    switch (fileType) {
-      case 'PDF':
-        return '#dc3545';
-      case 'DOCX':
-        return '#0d6efd';
-      case 'PPT':
-        return '#fd7e14';
-      default:
-        return '#6c757d';
+  const handleEditClick = (post: ResourcePost) => {
+    setSelectedPost(post);
+    setEditTitle(post.title);
+    setEditContent(post.content);
+    setEditCategory(post.category);
+    setEditDownloadUrl(post.downloadUrl || '');
+    setIsDialogOpen(true);
+  };
+
+  const handleDeleteClick = (postId: number) => {
+    // TODO: API 호출로 대체
+    setPosts(posts.filter(post => post.id !== postId));
+  };
+
+  const handleDialogClose = () => {
+    setIsDialogOpen(false);
+    setSelectedPost(null);
+    setEditTitle('');
+    setEditContent('');
+    setEditCategory('');
+    setEditDownloadUrl('');
+  };
+
+  const handleCategoryChange = (event: SelectChangeEvent) => {
+    setEditCategory(event.target.value);
+  };
+
+  const handleSave = () => {
+    if (selectedPost) {
+      // 수정
+      setPosts(posts.map(post =>
+        post.id === selectedPost.id
+          ? {
+              ...post,
+              title: editTitle,
+              content: editContent,
+              category: editCategory,
+              downloadUrl: editDownloadUrl || undefined,
+            }
+          : post
+      ));
+    } else {
+      // 새 글 작성
+      const newPost: ResourcePost = {
+        id: Math.max(...posts.map(p => p.id)) + 1,
+        title: editTitle,
+        content: editContent,
+        author: user?.name || '관리자',
+        date: new Date().toISOString().split('T')[0],
+        category: editCategory,
+        views: 0,
+        downloadUrl: editDownloadUrl || undefined,
+      };
+      setPosts([newPost, ...posts]);
     }
+    handleDialogClose();
   };
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box sx={{ mt: 2, mb: 6 }}>
-        <Typography
-          variant="h5"
-          component="h1"
-          gutterBottom
-          sx={{
-            fontWeight: 500,
-            mb: 3,
-            pl: 1,
-          }}
-        >
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" component="h1">
           관광교사 임용자료
         </Typography>
-
-        <Paper elevation={0} sx={{ backgroundColor: '#f8f9fa' }}>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell width="8%" align="center" sx={{ fontWeight: 'bold' }}>번호</TableCell>
-                  <TableCell width="47%" sx={{ fontWeight: 'bold' }}>제목</TableCell>
-                  <TableCell width="15%" align="center" sx={{ fontWeight: 'bold' }}>작성자</TableCell>
-                  <TableCell width="15%" align="center" sx={{ fontWeight: 'bold' }}>작성일</TableCell>
-                  <TableCell width="15%" align="center" sx={{ fontWeight: 'bold' }}>조회/다운</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {resources.map((resource) => (
-                  <TableRow 
-                    key={resource.id}
-                    sx={{ 
-                      '&:hover': { 
-                        backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                        cursor: 'pointer'
-                      }
-                    }}
-                  >
-                    <TableCell align="center">{resource.id}</TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            backgroundColor: getFileTypeColor(resource.fileType),
-                            color: 'white',
-                            px: 1,
-                            py: 0.5,
-                            borderRadius: 1,
-                            fontSize: '0.7rem',
-                          }}
-                        >
-                          {resource.fileType}
-                        </Typography>
-                        {resource.title}
-                      </Box>
-                    </TableCell>
-                    <TableCell align="center">{resource.author}</TableCell>
-                    <TableCell align="center">{resource.date}</TableCell>
-                    <TableCell align="center">
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          <VisibilityIcon sx={{ fontSize: 16, opacity: 0.7 }} />
-                          {resource.views}
-                        </Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          <DownloadIcon sx={{ fontSize: 16, opacity: 0.7 }} />
-                          {resource.downloads}
-                        </Box>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-            <Pagination 
-              count={Math.ceil(resources.length / itemsPerPage)} 
-              page={page} 
-              onChange={handlePageChange}
-              color="primary"
-              size={isMobile ? "small" : "medium"}
-            />
-          </Box>
-        </Paper>
+        {user?.role === 'admin' && (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleCreateClick}
+          >
+            새 자료 등록
+          </Button>
+        )}
       </Box>
+
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell width="50%">제목</TableCell>
+              <TableCell>분류</TableCell>
+              <TableCell>작성자</TableCell>
+              <TableCell>작성일</TableCell>
+              <TableCell align="center">조회수</TableCell>
+              {user?.role === 'admin' && (
+                <TableCell align="center">관리</TableCell>
+              )}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {posts.map((post) => (
+              <TableRow key={post.id}>
+                <TableCell>{post.title}</TableCell>
+                <TableCell>{post.category}</TableCell>
+                <TableCell>{post.author}</TableCell>
+                <TableCell>{post.date}</TableCell>
+                <TableCell align="center">{post.views}</TableCell>
+                {user?.role === 'admin' && (
+                  <TableCell align="center">
+                    <IconButton
+                      size="small"
+                      onClick={() => handleEditClick(post)}
+                    >
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleDeleteClick(post.id)}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <Dialog
+        open={isDialogOpen}
+        onClose={handleDialogClose}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          {selectedPost ? '임용자료 수정' : '새 임용자료 등록'}
+        </DialogTitle>
+        <DialogContent>
+          <TextField
+            label="제목"
+            value={editTitle}
+            onChange={(e) => setEditTitle(e.target.value)}
+            fullWidth
+            margin="normal"
+          />
+          <FormControl fullWidth margin="normal">
+            <InputLabel>분류</InputLabel>
+            <Select
+              value={editCategory}
+              label="분류"
+              onChange={handleCategoryChange}
+            >
+              {categories.map((category) => (
+                <MenuItem key={category} value={category}>
+                  {category}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <TextField
+            label="내용"
+            value={editContent}
+            onChange={(e) => setEditContent(e.target.value)}
+            multiline
+            rows={8}
+            fullWidth
+            margin="normal"
+          />
+          <TextField
+            label="첨부파일 URL"
+            value={editDownloadUrl}
+            onChange={(e) => setEditDownloadUrl(e.target.value)}
+            fullWidth
+            margin="normal"
+            placeholder="파일 다운로드 URL을 입력하세요"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDialogClose}>취소</Button>
+          <Button onClick={handleSave} variant="contained">
+            저장
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

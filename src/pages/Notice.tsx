@@ -1,126 +1,240 @@
-import { Container, Typography, Box, useTheme, useMediaQuery, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, Pagination } from '@mui/material';
-import VisibilityIcon from '@mui/icons-material/Visibility';
 import { useState } from 'react';
+import {
+  Container,
+  Typography,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Button,
+  Box,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  IconButton,
+  Chip,
+} from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import { useAuth } from '../contexts/AuthContext';
 
-// 임시 데이터
-const notices = [
-  {
-    id: 1,
-    title: '2024학년도 관광교사 임용시험 대비 스터디 모집',
-    author: '관리자',
-    date: '2024-03-20',
-    views: 45
-  },
-  {
-    id: 2,
-    title: '2024년 1학기 관광교육 연구회 정기 모임 안내',
-    author: '관리자',
-    date: '2024-03-15',
-    views: 38
-  },
-  {
-    id: 3,
-    title: '관광교사 임용시험 기출문제 자료집 공유',
-    author: '관리자',
-    date: '2024-03-10',
-    views: 92
-  },
-  {
-    id: 4,
-    title: '2024년 관광교육 교과연구회 지원사업 안내',
-    author: '관리자',
-    date: '2024-03-05',
-    views: 67
-  },
-  {
-    id: 5,
-    title: '특성화고 관광과 교육과정 개편 연구 참여자 모집',
-    author: '관리자',
-    date: '2024-03-01',
-    views: 73
-  }
-];
+interface NoticePost {
+  id: number;
+  title: string;
+  content: string;
+  author: string;
+  date: string;
+  isNotice: boolean;
+  views: number;
+}
 
 const Notice = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const [page, setPage] = useState(1);
-  const itemsPerPage = 10;
+  const { user } = useAuth();
+  const [posts, setPosts] = useState<NoticePost[]>([
+    {
+      id: 1,
+      title: '2024년 한국관광교육연구회 정기총회 개최 안내',
+      content: '정기총회 내용...',
+      author: '관리자',
+      date: '2024-03-15',
+      isNotice: true,
+      views: 45,
+    },
+    {
+      id: 2,
+      title: '관광 교사 연수 프로그램 안내',
+      content: '연수 프로그램 내용...',
+      author: '관리자',
+      date: '2024-03-10',
+      isNotice: false,
+      views: 32,
+    },
+  ]);
 
-  const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
-    setPage(value);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<NoticePost | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editContent, setEditContent] = useState('');
+  const [isNotice, setIsNotice] = useState(false);
+
+  const handleCreateClick = () => {
+    setSelectedPost(null);
+    setEditTitle('');
+    setEditContent('');
+    setIsNotice(false);
+    setIsDialogOpen(true);
+  };
+
+  const handleEditClick = (post: NoticePost) => {
+    setSelectedPost(post);
+    setEditTitle(post.title);
+    setEditContent(post.content);
+    setIsNotice(post.isNotice);
+    setIsDialogOpen(true);
+  };
+
+  const handleDeleteClick = (postId: number) => {
+    // TODO: API 호출로 대체
+    setPosts(posts.filter(post => post.id !== postId));
+  };
+
+  const handleDialogClose = () => {
+    setIsDialogOpen(false);
+    setSelectedPost(null);
+    setEditTitle('');
+    setEditContent('');
+    setIsNotice(false);
+  };
+
+  const handleSave = () => {
+    if (selectedPost) {
+      // 수정
+      setPosts(posts.map(post =>
+        post.id === selectedPost.id
+          ? {
+              ...post,
+              title: editTitle,
+              content: editContent,
+              isNotice,
+            }
+          : post
+      ));
+    } else {
+      // 새 글 작성
+      const newPost: NoticePost = {
+        id: Math.max(...posts.map(p => p.id)) + 1,
+        title: editTitle,
+        content: editContent,
+        author: user?.name || '관리자',
+        date: new Date().toISOString().split('T')[0],
+        isNotice,
+        views: 0,
+      };
+      setPosts([newPost, ...posts]);
+    }
+    handleDialogClose();
   };
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box sx={{ mt: 2, mb: 6 }}>
-        <Typography
-          variant="h5"
-          component="h1"
-          gutterBottom
-          sx={{
-            fontWeight: 500,
-            mb: 3,
-            pl: 1,
-          }}
-        >
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" component="h1">
           연구회 공지사항
         </Typography>
-
-        <Paper elevation={0} sx={{ backgroundColor: '#f8f9fa' }}>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell width="10%" align="center" sx={{ fontWeight: 'bold' }}>번호</TableCell>
-                  <TableCell width="50%" sx={{ fontWeight: 'bold' }}>제목</TableCell>
-                  <TableCell width="15%" align="center" sx={{ fontWeight: 'bold' }}>작성자</TableCell>
-                  <TableCell width="15%" align="center" sx={{ fontWeight: 'bold' }}>작성일</TableCell>
-                  <TableCell width="10%" align="center" sx={{ fontWeight: 'bold' }}>조회</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {notices.map((notice) => (
-                  <TableRow 
-                    key={notice.id}
-                    sx={{ 
-                      '&:hover': { 
-                        backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                        cursor: 'pointer'
-                      }
-                    }}
-                  >
-                    <TableCell align="center">{notice.id}</TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        {notice.title}
-                      </Box>
-                    </TableCell>
-                    <TableCell align="center">{notice.author}</TableCell>
-                    <TableCell align="center">{notice.date}</TableCell>
-                    <TableCell align="center">
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
-                        <VisibilityIcon sx={{ fontSize: 16, opacity: 0.7 }} />
-                        {notice.views}
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-            <Pagination 
-              count={Math.ceil(notices.length / itemsPerPage)} 
-              page={page} 
-              onChange={handlePageChange}
-              color="primary"
-              size={isMobile ? "small" : "medium"}
-            />
-          </Box>
-        </Paper>
+        {user?.role === 'admin' && (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleCreateClick}
+          >
+            새 글 작성
+          </Button>
+        )}
       </Box>
+
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell width="60%">제목</TableCell>
+              <TableCell>작성자</TableCell>
+              <TableCell>작성일</TableCell>
+              <TableCell align="center">조회수</TableCell>
+              {user?.role === 'admin' && (
+                <TableCell align="center">관리</TableCell>
+              )}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {posts.map((post) => (
+              <TableRow key={post.id}>
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {post.isNotice && (
+                      <Chip
+                        icon={<VolumeUpIcon />}
+                        label="공지"
+                        size="small"
+                        color="primary"
+                      />
+                    )}
+                    {post.title}
+                  </Box>
+                </TableCell>
+                <TableCell>{post.author}</TableCell>
+                <TableCell>{post.date}</TableCell>
+                <TableCell align="center">{post.views}</TableCell>
+                {user?.role === 'admin' && (
+                  <TableCell align="center">
+                    <IconButton
+                      size="small"
+                      onClick={() => handleEditClick(post)}
+                    >
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleDeleteClick(post.id)}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <Dialog
+        open={isDialogOpen}
+        onClose={handleDialogClose}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          {selectedPost ? '공지사항 수정' : '새 공지사항 작성'}
+        </DialogTitle>
+        <DialogContent>
+          <TextField
+            label="제목"
+            value={editTitle}
+            onChange={(e) => setEditTitle(e.target.value)}
+            fullWidth
+            margin="normal"
+          />
+          <TextField
+            label="내용"
+            value={editContent}
+            onChange={(e) => setEditContent(e.target.value)}
+            multiline
+            rows={12}
+            fullWidth
+            margin="normal"
+          />
+          <Button
+            variant={isNotice ? "contained" : "outlined"}
+            startIcon={<VolumeUpIcon />}
+            onClick={() => setIsNotice(!isNotice)}
+            sx={{ mt: 2 }}
+          >
+            공지로 등록
+          </Button>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDialogClose}>취소</Button>
+          <Button onClick={handleSave} variant="contained">
+            저장
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

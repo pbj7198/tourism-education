@@ -1,157 +1,352 @@
-import { Container, Typography, Box, useTheme, useMediaQuery, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, Pagination } from '@mui/material';
+import { useState } from 'react';
+import {
+  Container,
+  Typography,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Button,
+  Box,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  IconButton,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  SelectChangeEvent,
+  Chip,
+} from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
-import { useState, useMemo } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 
-// 임시 데이터
-const jobPostings = [
-  {
-    id: 13,
-    title: '한국문화영상고등학교 기간제 교사 모집',
-    author: 'kang****',
-    date: '2024.10.30',
-    isNotice: false
-  },
-  {
-    id: 12,
-    title: '송곡관광고등학교 기간제교원 채용 재공고(관광)',
-    author: 'zinn****',
-    date: '2024.8.12',
-    isNotice: false
-  },
-  {
-    id: 11,
-    title: '2024년 중문고등학교 관광 기간제 채용공고',
-    author: 'non0****',
-    date: '2024.2.2',
-    isNotice: false
-  },
-  {
-    id: 10,
-    title: '2024년 제주고등학교 관광 기간제 교사 채용 공고',
-    author: 'non0****',
-    date: '2024.2.2',
-    isNotice: false
-  },
-  {
-    id: 9,
-    title: '2024년 고명외식고등학교 관광(기간제) 교사 채용 공고(~2024.1.22.)',
-    author: '관리자',
-    date: '2024.1.13',
-    isNotice: false
-  },
-  {
-    id: 7,
-    title: '2024년 송곡관광고등학교 관광(기간제) 교사 채용 공고(~2024.1.24.)',
-    author: '관리자',
-    date: '2024.1.13',
-    isNotice: false
-  },
-  {
-    id: 2,
-    title: '[공지] 관광교사 채용소식 게시글 양식',
-    author: '관리자',
-    date: '2023.12.17',
-    isNotice: true
-  },
-  {
-    id: 1,
-    title: '[공지] 특성화고 관광교사 채용 정보 확인 사이트',
-    author: '관리자',
-    date: '2023.12.17',
-    isNotice: true
-  }
-];
+interface JobPost {
+  id: number;
+  title: string;
+  content: string;
+  author: string;
+  date: string;
+  category: string;
+  isNotice: boolean;
+  views: number;
+  school?: string;
+  location?: string;
+  position?: string;
+  deadline?: string;
+}
 
 const Jobs = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const [page, setPage] = useState(1);
-  const itemsPerPage = 10;
+  const { user } = useAuth();
+  const [posts, setPosts] = useState<JobPost[]>([
+    {
+      id: 1,
+      title: '2024학년도 관광과 교사 채용 공고',
+      content: '채용 공고 내용...',
+      author: '관리자',
+      date: '2024-03-15',
+      category: '채용공고',
+      isNotice: true,
+      views: 156,
+      school: '한국관광고등학교',
+      location: '서울특별시',
+      position: '관광교사',
+      deadline: '2024-04-15',
+    },
+    {
+      id: 2,
+      title: '2024학년도 2학기 기간제 교사 모집',
+      content: '기간제 교사 모집 내용...',
+      author: '관리자',
+      date: '2024-03-10',
+      category: '기간제',
+      isNotice: false,
+      views: 89,
+      school: '부산관광고등학교',
+      location: '부산광역시',
+      position: '기간제교사',
+      deadline: '2024-07-31',
+    },
+  ]);
 
-  // 공지사항을 최상단에 정렬하고, 나머지는 ID 기준 내림차순 정렬
-  const sortedJobPostings = useMemo(() => {
-    return [...jobPostings].sort((a, b) => {
-      if (a.isNotice && !b.isNotice) return -1;
-      if (!a.isNotice && b.isNotice) return 1;
-      if (a.isNotice === b.isNotice) {
-        // 공지사항끼리는 최신순(ID 내림차순)으로 정렬
-        return b.id - a.id;
-      }
-      return 0;
-    });
-  }, []);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<JobPost | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editContent, setEditContent] = useState('');
+  const [editCategory, setEditCategory] = useState('');
+  const [editSchool, setEditSchool] = useState('');
+  const [editLocation, setEditLocation] = useState('');
+  const [editPosition, setEditPosition] = useState('');
+  const [editDeadline, setEditDeadline] = useState('');
+  const [isNotice, setIsNotice] = useState(false);
 
-  const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
-    setPage(value);
+  const categories = [
+    '채용공고',
+    '기간제',
+    '시간강사',
+    '강사모집',
+    '기타',
+  ];
+
+  const handleCreateClick = () => {
+    setSelectedPost(null);
+    setEditTitle('');
+    setEditContent('');
+    setEditCategory('');
+    setEditSchool('');
+    setEditLocation('');
+    setEditPosition('');
+    setEditDeadline('');
+    setIsNotice(false);
+    setIsDialogOpen(true);
+  };
+
+  const handleEditClick = (post: JobPost) => {
+    setSelectedPost(post);
+    setEditTitle(post.title);
+    setEditContent(post.content);
+    setEditCategory(post.category);
+    setEditSchool(post.school || '');
+    setEditLocation(post.location || '');
+    setEditPosition(post.position || '');
+    setEditDeadline(post.deadline || '');
+    setIsNotice(post.isNotice);
+    setIsDialogOpen(true);
+  };
+
+  const handleDeleteClick = (postId: number) => {
+    // TODO: API 호출로 대체
+    setPosts(posts.filter(post => post.id !== postId));
+  };
+
+  const handleDialogClose = () => {
+    setIsDialogOpen(false);
+    setSelectedPost(null);
+    setEditTitle('');
+    setEditContent('');
+    setEditCategory('');
+    setEditSchool('');
+    setEditLocation('');
+    setEditPosition('');
+    setEditDeadline('');
+    setIsNotice(false);
+  };
+
+  const handleCategoryChange = (event: SelectChangeEvent) => {
+    setEditCategory(event.target.value);
+  };
+
+  const handleSave = () => {
+    if (selectedPost) {
+      // 수정
+      setPosts(posts.map(post =>
+        post.id === selectedPost.id
+          ? {
+              ...post,
+              title: editTitle,
+              content: editContent,
+              category: editCategory,
+              school: editSchool || undefined,
+              location: editLocation || undefined,
+              position: editPosition || undefined,
+              deadline: editDeadline || undefined,
+              isNotice,
+            }
+          : post
+      ));
+    } else {
+      // 새 글 작성
+      const newPost: JobPost = {
+        id: Math.max(...posts.map(p => p.id)) + 1,
+        title: editTitle,
+        content: editContent,
+        author: user?.name || '관리자',
+        date: new Date().toISOString().split('T')[0],
+        category: editCategory,
+        isNotice,
+        views: 0,
+        school: editSchool || undefined,
+        location: editLocation || undefined,
+        position: editPosition || undefined,
+        deadline: editDeadline || undefined,
+      };
+      setPosts([newPost, ...posts]);
+    }
+    handleDialogClose();
   };
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box sx={{ mt: 2, mb: 6 }}>
-        <Typography
-          variant="h5"
-          component="h1"
-          gutterBottom
-          sx={{
-            fontWeight: 500,
-            mb: 3,
-            pl: 1,
-          }}
-        >
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" component="h1">
           관광교사 채용소식
         </Typography>
-
-        <Paper elevation={0} sx={{ backgroundColor: '#f8f9fa' }}>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell width="10%" align="center" sx={{ fontWeight: 'bold' }}>번호</TableCell>
-                  <TableCell width="55%" sx={{ fontWeight: 'bold' }}>글제목</TableCell>
-                  <TableCell width="15%" align="center" sx={{ fontWeight: 'bold' }}>글쓴이</TableCell>
-                  <TableCell width="20%" align="center" sx={{ fontWeight: 'bold' }}>작성일</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {sortedJobPostings.map((job) => (
-                  <TableRow 
-                    key={job.id}
-                    sx={{ 
-                      '&:hover': { 
-                        backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                        cursor: 'pointer'
-                      },
-                      backgroundColor: job.isNotice ? 'rgba(0, 0, 0, 0.02)' : 'inherit'
-                    }}
-                  >
-                    <TableCell align="center">{job.id}</TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        {job.isNotice && (
-                          <VolumeUpIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                        )}
-                        {job.title}
-                      </Box>
-                    </TableCell>
-                    <TableCell align="center">{job.author}</TableCell>
-                    <TableCell align="center">{job.date}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-            <Pagination 
-              count={Math.ceil(sortedJobPostings.length / itemsPerPage)} 
-              page={page} 
-              onChange={handlePageChange}
-              color="primary"
-              size={isMobile ? "small" : "medium"}
-            />
-          </Box>
-        </Paper>
+        {user?.role === 'admin' && (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleCreateClick}
+          >
+            새 글 작성
+          </Button>
+        )}
       </Box>
+
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell width="40%">제목</TableCell>
+              <TableCell>분류</TableCell>
+              <TableCell>학교</TableCell>
+              <TableCell>지역</TableCell>
+              <TableCell>마감일</TableCell>
+              <TableCell align="center">조회수</TableCell>
+              {user?.role === 'admin' && (
+                <TableCell align="center">관리</TableCell>
+              )}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {posts.map((post) => (
+              <TableRow key={post.id}>
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {post.isNotice && (
+                      <Chip
+                        icon={<VolumeUpIcon />}
+                        label="공지"
+                        size="small"
+                        color="primary"
+                      />
+                    )}
+                    {post.title}
+                  </Box>
+                </TableCell>
+                <TableCell>{post.category}</TableCell>
+                <TableCell>{post.school}</TableCell>
+                <TableCell>{post.location}</TableCell>
+                <TableCell>{post.deadline}</TableCell>
+                <TableCell align="center">{post.views}</TableCell>
+                {user?.role === 'admin' && (
+                  <TableCell align="center">
+                    <IconButton
+                      size="small"
+                      onClick={() => handleEditClick(post)}
+                    >
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleDeleteClick(post.id)}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <Dialog
+        open={isDialogOpen}
+        onClose={handleDialogClose}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          {selectedPost ? '채용공고 수정' : '새 채용공고 작성'}
+        </DialogTitle>
+        <DialogContent>
+          <TextField
+            label="제목"
+            value={editTitle}
+            onChange={(e) => setEditTitle(e.target.value)}
+            fullWidth
+            margin="normal"
+          />
+          <FormControl fullWidth margin="normal">
+            <InputLabel>분류</InputLabel>
+            <Select
+              value={editCategory}
+              label="분류"
+              onChange={handleCategoryChange}
+            >
+              {categories.map((category) => (
+                <MenuItem key={category} value={category}>
+                  {category}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <TextField
+            label="학교명"
+            value={editSchool}
+            onChange={(e) => setEditSchool(e.target.value)}
+            fullWidth
+            margin="normal"
+          />
+          <TextField
+            label="지역"
+            value={editLocation}
+            onChange={(e) => setEditLocation(e.target.value)}
+            fullWidth
+            margin="normal"
+          />
+          <TextField
+            label="모집분야"
+            value={editPosition}
+            onChange={(e) => setEditPosition(e.target.value)}
+            fullWidth
+            margin="normal"
+          />
+          <TextField
+            label="마감일"
+            type="date"
+            value={editDeadline}
+            onChange={(e) => setEditDeadline(e.target.value)}
+            fullWidth
+            margin="normal"
+            InputLabelProps={{
+              shrink: true,
+            }}
+          />
+          <TextField
+            label="내용"
+            value={editContent}
+            onChange={(e) => setEditContent(e.target.value)}
+            multiline
+            rows={8}
+            fullWidth
+            margin="normal"
+          />
+          <Button
+            variant={isNotice ? "contained" : "outlined"}
+            startIcon={<VolumeUpIcon />}
+            onClick={() => setIsNotice(!isNotice)}
+            sx={{ mt: 2 }}
+          >
+            공지로 등록
+          </Button>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDialogClose}>취소</Button>
+          <Button onClick={handleSave} variant="contained">
+            저장
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
