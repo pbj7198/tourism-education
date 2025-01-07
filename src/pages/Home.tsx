@@ -8,7 +8,7 @@ const Home = () => {
     <Box
       sx={{
         position: 'relative',
-        minHeight: '100vh',
+        minHeight: 'calc(100vh - 80px)',
         backgroundImage: 'url(/tourism-education/background.jpg)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
@@ -31,7 +31,7 @@ const Home = () => {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            minHeight: '100vh',
+            minHeight: 'calc(100vh - 80px)',
             pt: isMobile ? 2 : 4,
             pb: isMobile ? 4 : 6,
             textAlign: 'center',

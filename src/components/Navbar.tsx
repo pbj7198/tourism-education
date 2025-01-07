@@ -28,13 +28,13 @@ const Navbar = () => {
     <AppBar 
       position="fixed" 
       sx={{ 
-        backgroundColor: 'transparent',
-        boxShadow: 'none',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        backdropFilter: 'blur(10px)',
+        zIndex: theme.zIndex.drawer + 1,
       }}
     >
       <Container>
-        <Toolbar sx={{ justifyContent: 'space-between', minHeight: '80px' }}>
+        <Toolbar sx={{ height: '80px', minHeight: '80px' }}>
           <Typography 
             variant="h6" 
             component={RouterLink} 
@@ -45,6 +45,7 @@ const Navbar = () => {
               fontSize: isMobile ? '1.1rem' : '1.3rem',
               fontWeight: 500,
               letterSpacing: '0.5px',
+              flexGrow: 1,
             }}
           >
             한국관광교육연구회
