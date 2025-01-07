@@ -55,19 +55,19 @@ const Notice = () => {
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Box sx={{ mt: 2, mb: 6 }}>
         <Typography
-          variant={isMobile ? "h4" : "h3"}
+          variant="h5"
           component="h1"
           gutterBottom
           sx={{
-            fontWeight: 600,
-            textAlign: 'center',
-            mb: 5,
+            fontWeight: 500,
+            mb: 3,
+            pl: 1,
           }}
         >
           연구회 공지사항
         </Typography>
 
-        <Paper elevation={0} sx={{ p: 3, backgroundColor: '#f8f9fa' }}>
+        <Paper elevation={0} sx={{ backgroundColor: '#f8f9fa' }}>
           <TableContainer>
             <Table>
               <TableHead>
@@ -110,7 +110,7 @@ const Notice = () => {
             </Table>
           </TableContainer>
           
-          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
             <Pagination 
               count={Math.ceil(notices.length / itemsPerPage)} 
               page={page} 
