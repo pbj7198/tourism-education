@@ -8,12 +8,15 @@ const Home = () => {
     <Box
       sx={{
         position: 'relative',
-        minHeight: 'calc(100vh - 80px)',
+        minHeight: '100vh',
+        height: '100%',
         backgroundImage: 'url(/tourism-education/background.jpg)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
         top: '-80px',
         marginBottom: '-80px',
+        paddingBottom: '80px',
         '&::before': {
           content: '""',
           position: 'absolute',
@@ -33,9 +36,9 @@ const Home = () => {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            minHeight: 'calc(100vh - 80px)',
-            pt: isMobile ? 2 : 4,
-            pb: isMobile ? 4 : 6,
+            minHeight: '100vh',
+            pt: isMobile ? 10 : 12,
+            pb: isMobile ? 10 : 12,
             textAlign: 'center',
             color: 'white',
           }}
