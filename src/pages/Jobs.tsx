@@ -1,58 +1,64 @@
-import { Container, Typography, Box, useTheme, useMediaQuery, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, Pagination } from '@mui/material';
-import BusinessIcon from '@mui/icons-material/Business';
-import { useState } from 'react';
+import { Container, Typography, Box, useTheme, useMediaQuery, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, Pagination } from '@mui/material';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import { useState, useMemo } from 'react';
 
 // 임시 데이터
 const jobPostings = [
   {
-    id: 1,
-    title: '2024학년도 ○○고등학교 관광 교과 기간제 교사 채용 공고',
-    school: '○○고등학교',
-    location: '서울',
-    status: '진행중',
-    period: '2024-03-01 ~ 2024-08-31',
-    postDate: '2024-03-20',
-    views: 245
+    id: 13,
+    title: '한국문화영상고등학교 기간제 교사 모집',
+    author: 'kang****',
+    date: '2024.10.30',
+    isNotice: false
+  },
+  {
+    id: 12,
+    title: '송곡관광고등학교 기간제교원 채용 재공고(관광)',
+    author: 'zinn****',
+    date: '2024.8.12',
+    isNotice: false
+  },
+  {
+    id: 11,
+    title: '2024년 중문고등학교 관광 기간제 채용공고',
+    author: 'non0****',
+    date: '2024.2.2',
+    isNotice: false
+  },
+  {
+    id: 10,
+    title: '2024년 제주고등학교 관광 기간제 교사 채용 공고',
+    author: 'non0****',
+    date: '2024.2.2',
+    isNotice: false
+  },
+  {
+    id: 9,
+    title: '2024년 고명외식고등학교 관광(기간제) 교사 채용 공고(~2024.1.22.)',
+    author: '관리자',
+    date: '2024.1.13',
+    isNotice: false
+  },
+  {
+    id: 7,
+    title: '2024년 송곡관광고등학교 관광(기간제) 교사 채용 공고(~2024.1.24.)',
+    author: '관리자',
+    date: '2024.1.13',
+    isNotice: false
   },
   {
     id: 2,
-    title: '2024학년도 △△관광고등학교 관광 교과 정교사 채용 공고',
-    school: '△△관광고등학교',
-    location: '부산',
-    status: '마감',
-    period: '정규직',
-    postDate: '2024-03-15',
-    views: 312
+    title: '[공지] 관광교사 채용소식 게시글 양식',
+    author: '관리자',
+    date: '2023.12.17',
+    isNotice: true
   },
   {
-    id: 3,
-    title: '□□관광고등학교 관광 교과 시간강사 모집',
-    school: '□□관광고등학교',
-    location: '인천',
-    status: '진행중',
-    period: '2024-04-01 ~ 2024-07-31',
-    postDate: '2024-03-10',
-    views: 178
-  },
-  {
-    id: 4,
-    title: '◇◇고등학교 관광 교과 기간제 교사 채용',
-    school: '◇◇고등학교',
-    location: '대전',
-    status: '마감',
-    period: '2024-03-15 ~ 2024-12-31',
-    postDate: '2024-03-05',
-    views: 265
-  },
-  {
-    id: 5,
-    title: '2024학년도 ◎◎관광고등학교 관광 교과 정교사 특별 채용',
-    school: '◎◎관광고등학교',
-    location: '경기',
-    status: '진행중',
-    period: '정규직',
-    postDate: '2024-03-01',
-    views: 423
+    id: 1,
+    title: '[공지] 특성화고 관광교사 채용 정보 확인 사이트',
+    author: '관리자',
+    date: '2023.12.17',
+    isNotice: true
   }
 ];
 
@@ -61,6 +67,19 @@ const Jobs = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [page, setPage] = useState(1);
   const itemsPerPage = 10;
+
+  // 공지사항을 최상단에 정렬하고, 나머지는 ID 기준 내림차순 정렬
+  const sortedJobPostings = useMemo(() => {
+    return [...jobPostings].sort((a, b) => {
+      if (a.isNotice && !b.isNotice) return -1;
+      if (!a.isNotice && b.isNotice) return 1;
+      if (a.isNotice === b.isNotice) {
+        // 공지사항끼리는 최신순(ID 내림차순)으로 정렬
+        return b.id - a.id;
+      }
+      return 0;
+    });
+  }, []);
 
   const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
     setPage(value);
@@ -87,51 +106,35 @@ const Jobs = () => {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell width="8%" align="center" sx={{ fontWeight: 'bold' }}>번호</TableCell>
-                  <TableCell width="42%" sx={{ fontWeight: 'bold' }}>채용공고</TableCell>
-                  <TableCell width="15%" align="center" sx={{ fontWeight: 'bold' }}>지역</TableCell>
-                  <TableCell width="15%" align="center" sx={{ fontWeight: 'bold' }}>게시일</TableCell>
-                  <TableCell width="10%" align="center" sx={{ fontWeight: 'bold' }}>상태</TableCell>
-                  <TableCell width="10%" align="center" sx={{ fontWeight: 'bold' }}>조회</TableCell>
+                  <TableCell width="10%" align="center" sx={{ fontWeight: 'bold' }}>번호</TableCell>
+                  <TableCell width="55%" sx={{ fontWeight: 'bold' }}>글제목</TableCell>
+                  <TableCell width="15%" align="center" sx={{ fontWeight: 'bold' }}>글쓴이</TableCell>
+                  <TableCell width="20%" align="center" sx={{ fontWeight: 'bold' }}>작성일</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {jobPostings.map((job) => (
+                {sortedJobPostings.map((job) => (
                   <TableRow 
                     key={job.id}
                     sx={{ 
                       '&:hover': { 
                         backgroundColor: 'rgba(0, 0, 0, 0.04)',
                         cursor: 'pointer'
-                      }
+                      },
+                      backgroundColor: job.isNotice ? 'rgba(0, 0, 0, 0.02)' : 'inherit'
                     }}
                   >
                     <TableCell align="center">{job.id}</TableCell>
                     <TableCell>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                        <Typography variant="body2">{job.title}</Typography>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <BusinessIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                          <Typography variant="caption" color="text.secondary">
-                            {job.school} | {job.period}
-                          </Typography>
-                        </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        {job.isNotice && (
+                          <VolumeUpIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                        )}
+                        {job.title}
                       </Box>
                     </TableCell>
-                    <TableCell align="center">{job.location}</TableCell>
-                    <TableCell align="center">{job.postDate}</TableCell>
-                    <TableCell align="center">
-                      <Chip 
-                        label={job.status} 
-                        size="small"
-                        color={job.status === '진행중' ? 'primary' : 'default'}
-                        sx={{ 
-                          fontSize: '0.75rem',
-                          minWidth: 60
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell align="center">{job.views}</TableCell>
+                    <TableCell align="center">{job.author}</TableCell>
+                    <TableCell align="center">{job.date}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -140,7 +143,7 @@ const Jobs = () => {
           
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
             <Pagination 
-              count={Math.ceil(jobPostings.length / itemsPerPage)} 
+              count={Math.ceil(sortedJobPostings.length / itemsPerPage)} 
               page={page} 
               onChange={handlePageChange}
               color="primary"
