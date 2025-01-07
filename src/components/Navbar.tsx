@@ -25,18 +25,26 @@ const Navbar = () => {
   ];
 
   return (
-    <AppBar position="static">
+    <AppBar 
+      position="fixed" 
+      sx={{ 
+        backgroundColor: 'transparent',
+        boxShadow: 'none',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+      }}
+    >
       <Container>
-        <Toolbar>
+        <Toolbar sx={{ justifyContent: 'space-between', minHeight: '80px' }}>
           <Typography 
             variant="h6" 
             component={RouterLink} 
             to="/" 
-            style={{ 
+            sx={{ 
               textDecoration: 'none', 
-              color: 'white', 
-              flexGrow: 1,
-              fontSize: isMobile ? '1rem' : '1.25rem'
+              color: '#fff', 
+              fontSize: isMobile ? '1.1rem' : '1.3rem',
+              fontWeight: 500,
+              letterSpacing: '0.5px',
             }}
           >
             한국관광교육연구회
@@ -47,7 +55,7 @@ const Navbar = () => {
               <IconButton
                 size="large"
                 edge="end"
-                color="inherit"
+                sx={{ color: '#fff' }}
                 aria-label="menu"
                 onClick={handleMenu}
               >
@@ -80,18 +88,26 @@ const Navbar = () => {
               </Menu>
             </>
           ) : (
-            <>
+            <div>
               {menuItems.map((item) => (
                 <Button 
                   key={item.path}
-                  color="inherit" 
+                  sx={{ 
+                    color: '#fff',
+                    mx: 1.5,
+                    fontSize: '0.95rem',
+                    fontWeight: 400,
+                    '&:hover': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    }
+                  }}
                   component={RouterLink} 
                   to={item.path}
                 >
                   {item.text}
                 </Button>
               ))}
-            </>
+            </div>
           )}
         </Toolbar>
       </Container>
