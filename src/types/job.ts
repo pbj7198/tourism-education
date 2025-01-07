@@ -1,20 +1,16 @@
 export interface JobPost {
-  id: number;
+  id: string;
   title: string;
-  content: string;
-  author: {
-    id: string;
-    name: string;
-  };
-  date: string;
-  isNotice: boolean;
-  views: number;
-  deadline?: string;
-  school?: string;
-  location?: string;
-  position?: string;
-  requirements?: string;
-  status: 'active' | 'closed';
+  company: string;
+  description: string;
+  requirements: string;
+  location: string;
+  salary: string;
+  contactEmail: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+  status?: 'active' | 'closed';
 }
 
 export interface JobPostFormData {
