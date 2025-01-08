@@ -15,6 +15,7 @@ import Board from './pages/Board';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import AdminUsers from './pages/AdminUsers';
+import backgroundImage from '../public/background.jpg';
 
 const theme = createTheme({
   typography: {
@@ -41,7 +42,7 @@ function App() {
               display: 'flex', 
               flexDirection: 'column', 
               minHeight: '100vh',
-              backgroundImage: 'url(../public/background.jpg)',
+              backgroundImage: `url(${backgroundImage})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               backgroundAttachment: 'fixed',
