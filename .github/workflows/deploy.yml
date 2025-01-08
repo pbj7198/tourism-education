@@ -18,13 +18,17 @@ jobs:
           node-version: '18'
           cache: 'npm'
 
-      - name: Install Dependencies
+      - name: Clean Install
         run: |
+          rm -rf node_modules
+          rm -f package-lock.json
           npm install
           npm install firebase@10.7.1 --save-exact
+          npm install @rollup/rollup-linux-x64-gnu
 
       - name: Build
-        run: npm run build
+        run: |
+          npm run build
         env:
           CI: false
 
