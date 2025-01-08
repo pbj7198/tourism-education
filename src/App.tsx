@@ -1,5 +1,5 @@
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
-import { ThemeProvider, createTheme, Box } from '@mui/material';
+import { ThemeProvider, createTheme, Box, CssBaseline } from '@mui/material';
 import { AuthProvider } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -34,8 +34,21 @@ function App() {
   return (
     <AuthProvider>
       <ThemeProvider theme={theme}>
+        <CssBaseline />
         <Router>
-          <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              minHeight: '100vh',
+              backgroundImage: 'url(./background.jpg)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundAttachment: 'fixed',
+              backgroundColor: 'rgba(255, 255, 255, 0.9)',
+              backgroundBlendMode: 'overlay',
+            }}
+          >
             <Navbar />
             <Box 
               component="main" 
@@ -44,7 +57,8 @@ function App() {
                 minHeight: 'calc(100vh - 80px)',
                 marginTop: 0,
                 position: 'relative',
-                top: '80px'
+                top: '80px',
+                zIndex: 1,
               }}
             >
               <Routes>

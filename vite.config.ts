@@ -4,15 +4,19 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/',
-  publicDir: 'public',
+  base: './',
+  define: {
+    'process.env.PUBLIC_URL': '""',
+  },
   build: {
+    outDir: 'dist',
     assetsDir: 'assets',
     rollupOptions: {
       output: {
-        assetFileNames: 'assets/[name].[ext]'
+        assetFileNames: 'assets/[name].[hash][extname]',
+        chunkFileNames: 'assets/[name].[hash].js',
+        entryFileNames: 'assets/[name].[hash].js',
       }
-    },
-    outDir: 'dist'
+    }
   }
 })
