@@ -41,7 +41,7 @@ function App() {
               display: 'flex', 
               flexDirection: 'column', 
               minHeight: '100vh',
-              backgroundImage: 'url(./background.jpg)',
+              backgroundImage: 'url(../public/background.jpg)',
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               backgroundAttachment: 'fixed',
