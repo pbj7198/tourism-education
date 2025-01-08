@@ -1,240 +1,208 @@
-import { AppBar, Toolbar, Typography, Button, Container, IconButton, Menu, MenuItem, useTheme, useMediaQuery, Box, Divider } from '@mui/material';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import MenuIcon from '@mui/icons-material/Menu';
-import PersonIcon from '@mui/icons-material/Person';
 import { useState } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
+import {
+  AppBar,
+  Box,
+  Toolbar,
+  IconButton,
+  Typography,
+  Menu,
+  Container,
+  Button,
+  MenuItem,
+  useTheme,
+  useMediaQuery,
+} from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
 import { useAuth } from '../contexts/AuthContext';
+import logoImage from '../../public/logo.png';
+
+const pages = [
+  { title: '소개', path: '/about' },
+  { title: '공지사항', path: '/notice' },
+  { title: '자료실', path: '/resources' },
+  { title: '채용정보', path: '/jobs' },
+  { title: '게시판', path: '/board' },
+];
 
 const Navbar = () => {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
+  const [anchorElNav, setAnchorElNav] = useState<null | HTMLElement>(null);
+  const { user, logout } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const navigate = useNavigate();
-  const { user, isAuthenticated, logout } = useAuth();
 
-  const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
+  const handleOpenNavMenu = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorElNav(event.currentTarget);
   };
 
-  const handleUserMenu = (event: React.MouseEvent<HTMLElement>) => {
-    setUserMenuAnchor(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleUserMenuClose = () => {
-    setUserMenuAnchor(null);
+  const handleCloseNavMenu = () => {
+    setAnchorElNav(null);
   };
 
   const handleLogout = async () => {
-    await logout();
-    handleUserMenuClose();
-    navigate('/');
+    try {
+      await logout();
+    } catch (error) {
+      console.error('로그아웃 실패:', error);
+    }
   };
-
-  const menuItems = [
-    { text: '한국관광교육연구회 소개', path: '/about' },
-    { text: '연구회 공지사항', path: '/notice' },
-    { text: '관광교사 임용자료', path: '/resources' },
-    { text: '관광교사 채용소식', path: '/jobs' },
-    { text: '문의하기', path: '/board' },
-  ];
-
-  const adminMenuItems = [
-    { text: '회원 관리', path: '/admin/users' },
-  ];
 
   return (
     <AppBar 
       position="fixed" 
       sx={{ 
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        backdropFilter: 'blur(10px)',
-        zIndex: theme.zIndex.drawer + 1,
+        backgroundColor: 'white',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
       }}
     >
-      <Container>
-        <Toolbar sx={{ height: '80px', minHeight: '80px' }}>
-          <Typography 
-            variant="h6" 
+      <Container maxWidth="lg">
+        <Toolbar disableGutters>
+          {/* Desktop Logo */}
+          <Box 
             component={RouterLink} 
-            to="/" 
+            to="/"
             sx={{ 
-              textDecoration: 'none', 
-              color: '#fff', 
-              fontSize: isMobile ? '1.1rem' : '1.3rem',
-              fontWeight: 500,
-              letterSpacing: '0.5px',
-              flexGrow: 1,
+              display: { xs: 'none', md: 'flex' }, 
+              alignItems: 'center',
+              textDecoration: 'none',
+              color: 'inherit',
+              mr: 2,
             }}
           >
-            한국관광교육연구회
-          </Typography>
-          
-          {isMobile ? (
-            <>
-              <IconButton
-                size="large"
-                edge="end"
-                sx={{ color: '#fff' }}
-                aria-label="menu"
-                onClick={handleMenu}
-              >
-                <MenuIcon />
-              </IconButton>
-              <Menu
-                anchorEl={anchorEl}
-                anchorOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-                keepMounted
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-                open={Boolean(anchorEl)}
-                onClose={handleClose}
-              >
-                {menuItems.map((item) => (
-                  <MenuItem 
-                    key={item.path}
-                    onClick={handleClose}
-                    component={RouterLink}
-                    to={item.path}
-                    sx={{
-                      fontSize: '0.9rem',
-                      padding: '10px 20px',
-                    }}
-                  >
-                    {item.text}
-                  </MenuItem>
-                ))}
-                {user?.role === 'admin' && (
-                  <>
-                    <Divider />
-                    {adminMenuItems.map((item) => (
-                      <MenuItem 
-                        key={item.path}
-                        onClick={handleClose}
-                        component={RouterLink}
-                        to={item.path}
-                        sx={{
-                          fontSize: '0.9rem',
-                          padding: '10px 20px',
-                          color: theme.palette.primary.main,
-                        }}
-                      >
-                        {item.text}
-                      </MenuItem>
-                    ))}
-                  </>
-                )}
-                {!isAuthenticated ? (
-                  <MenuItem
-                    onClick={handleClose}
-                    component={RouterLink}
-                    to="/login"
-                    sx={{
-                      fontSize: '0.9rem',
-                      padding: '10px 20px',
-                    }}
-                  >
-                    로그인
-                  </MenuItem>
-                ) : (
-                  <MenuItem
-                    onClick={() => {
-                      handleClose();
-                      handleLogout();
-                    }}
-                    sx={{
-                      fontSize: '0.9rem',
-                      padding: '10px 20px',
-                    }}
-                  >
-                    로그아웃
-                  </MenuItem>
-                )}
-              </Menu>
-            </>
-          ) : (
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              {menuItems.map((item) => (
-                <Button 
-                  key={item.path}
-                  sx={{ 
-                    color: '#fff',
-                    mx: 1.5,
-                    fontSize: '0.9rem',
-                    fontWeight: 400,
-                    '&:hover': {
-                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                    }
-                  }}
-                  component={RouterLink} 
-                  to={item.path}
+            <img
+              src={logoImage}
+              alt="한국관광교육연구회 로고"
+              style={{ height: '40px', width: 'auto' }}
+            />
+          </Box>
+
+          {/* Mobile Menu */}
+          <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
+            <IconButton
+              size="large"
+              aria-label="메뉴"
+              aria-controls="menu-appbar"
+              aria-haspopup="true"
+              onClick={handleOpenNavMenu}
+              sx={{ color: 'text.primary' }}
+            >
+              <MenuIcon />
+            </IconButton>
+            <Menu
+              id="menu-appbar"
+              anchorEl={anchorElNav}
+              anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'left',
+              }}
+              keepMounted
+              transformOrigin={{
+                vertical: 'top',
+                horizontal: 'left',
+              }}
+              open={Boolean(anchorElNav)}
+              onClose={handleCloseNavMenu}
+              sx={{
+                display: { xs: 'block', md: 'none' },
+              }}
+            >
+              {pages.map((page) => (
+                <MenuItem 
+                  key={page.path} 
+                  onClick={handleCloseNavMenu}
+                  component={RouterLink}
+                  to={page.path}
                 >
-                  {item.text}
-                </Button>
+                  <Typography textAlign="center">{page.title}</Typography>
+                </MenuItem>
               ))}
-              {isAuthenticated ? (
-                <>
-                  <IconButton
-                    onClick={handleUserMenu}
-                    sx={{ color: '#fff', ml: 2 }}
+            </Menu>
+          </Box>
+
+          {/* Mobile Logo */}
+          <Box 
+            component={RouterLink} 
+            to="/"
+            sx={{ 
+              flexGrow: 1,
+              display: { xs: 'flex', md: 'none' }, 
+              justifyContent: 'center',
+              alignItems: 'center',
+              textDecoration: 'none',
+              color: 'inherit',
+            }}
+          >
+            <img
+              src={logoImage}
+              alt="한국관광교육연구회 로고"
+              style={{ height: '40px', width: 'auto' }}
+            />
+          </Box>
+
+          {/* Desktop Menu */}
+          <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, justifyContent: 'center' }}>
+            {pages.map((page) => (
+              <Button
+                key={page.path}
+                component={RouterLink}
+                to={page.path}
+                onClick={handleCloseNavMenu}
+                sx={{ 
+                  my: 2, 
+                  mx: 1,
+                  color: 'text.primary', 
+                  display: 'block',
+                  fontSize: '1rem',
+                  fontWeight: 500,
+                  '&:hover': {
+                    backgroundColor: 'rgba(0,0,0,0.04)',
+                  }
+                }}
+              >
+                {page.title}
+              </Button>
+            ))}
+          </Box>
+
+          {/* Auth Buttons */}
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {user ? (
+              <>
+                {user.role === 'admin' && (
+                  <Button
+                    component={RouterLink}
+                    to="/admin/users"
+                    sx={{ color: 'text.primary' }}
                   >
-                    <PersonIcon />
-                  </IconButton>
-                  <Menu
-                    anchorEl={userMenuAnchor}
-                    open={Boolean(userMenuAnchor)}
-                    onClose={handleUserMenuClose}
-                  >
-                    <MenuItem disabled>
-                      {user?.name} ({user?.role === 'admin' ? '관리자' : '회원'})
-                    </MenuItem>
-                    {user?.role === 'admin' && (
-                      <>
-                        <Divider />
-                        {adminMenuItems.map((item) => (
-                          <MenuItem
-                            key={item.path}
-                            onClick={handleUserMenuClose}
-                            component={RouterLink}
-                            to={item.path}
-                          >
-                            {item.text}
-                          </MenuItem>
-                        ))}
-                      </>
-                    )}
-                    <Divider />
-                    <MenuItem onClick={handleLogout}>로그아웃</MenuItem>
-                  </Menu>
-                </>
-              ) : (
+                    관리자
+                  </Button>
+                )}
+                <Button
+                  onClick={handleLogout}
+                  sx={{ color: 'text.primary' }}
+                >
+                  로그아웃
+                </Button>
+              </>
+            ) : (
+              <>
                 <Button
                   component={RouterLink}
                   to="/login"
-                  sx={{ 
-                    color: '#fff',
-                    ml: 2,
-                    border: '1px solid rgba(255, 255, 255, 0.5)',
-                    '&:hover': {
-                      border: '1px solid #fff',
-                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                    }
-                  }}
+                  sx={{ color: 'text.primary' }}
                 >
                   로그인
                 </Button>
-              )}
-            </Box>
-          )}
+                <Button
+                  component={RouterLink}
+                  to="/register"
+                  sx={{ color: 'text.primary' }}
+                >
+                  회원가입
+                </Button>
+              </>
+            )}
+          </Box>
         </Toolbar>
       </Container>
     </AppBar>
