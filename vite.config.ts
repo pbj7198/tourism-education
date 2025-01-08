@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/tourism-education/',
+  base: '/',
   publicDir: 'public',
   build: {
     assetsDir: 'assets',
@@ -12,6 +12,7 @@ export default defineConfig({
       output: {
         assetFileNames: 'assets/[name].[ext]'
       }
-    }
+    },
+    outDir: 'dist'
   }
 })
