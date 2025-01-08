@@ -18,11 +18,11 @@ import { useAuth } from '../contexts/AuthContext';
 import logoImage from '../../public/logo.png';
 
 const pages = [
-  { title: '소개', path: '/about' },
-  { title: '공지사항', path: '/notice' },
-  { title: '자료실', path: '/resources' },
-  { title: '채용정보', path: '/jobs' },
-  { title: '게시판', path: '/board' },
+  { title: '한국관광교육연구회 소개', path: '/about' },
+  { title: '연구회 공지사항', path: '/notice' },
+  { title: '관광교사 임용자료', path: '/resources' },
+  { title: '관광교사 채용소식', path: '/jobs' },
+  { title: '관광교사 게시판', path: '/board' },
 ];
 
 const Navbar = () => {
@@ -51,12 +51,14 @@ const Navbar = () => {
     <AppBar 
       position="fixed" 
       sx={{ 
-        backgroundColor: 'white',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        boxShadow: 'none',
+        borderBottom: '1px solid rgba(0, 0, 0, 0.1)',
+        backdropFilter: 'blur(5px)',
       }}
     >
       <Container maxWidth="lg">
-        <Toolbar disableGutters>
+        <Toolbar disableGutters sx={{ minHeight: '64px' }}>
           {/* Desktop Logo */}
           <Box 
             component={RouterLink} 
@@ -148,12 +150,13 @@ const Navbar = () => {
                 to={page.path}
                 onClick={handleCloseNavMenu}
                 sx={{ 
-                  my: 2, 
+                  my: 1, 
                   mx: 1,
                   color: 'text.primary', 
                   display: 'block',
-                  fontSize: '1rem',
+                  fontSize: '0.9rem',
                   fontWeight: 500,
+                  whiteSpace: 'nowrap',
                   '&:hover': {
                     backgroundColor: 'rgba(0,0,0,0.04)',
                   }
