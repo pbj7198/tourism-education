@@ -22,6 +22,8 @@ interface Comment {
   content: string;
   author: string;
   createdAt: string;
+  userId: string;
+  postId: string;
 }
 
 const PostDetail = () => {
@@ -101,15 +103,20 @@ const PostDetail = () => {
 
     try {
       setIsSubmitting(true);
-      const newCommentDoc: Omit<Comment, 'id'> = {
-        postId: id!,
-        text: newComment,
+      const newCommentDoc = {
+        content: newComment,
         author: currentUser.name,
         createdAt: new Date().toISOString(),
-        userId: currentUser.id
+        userId: currentUser.id,
+        postId: id || ''
       };
 
-      await addDoc(collection(db, 'posts', id, 'comments'), newCommentDoc);
+      if (!id) {
+        throw new Error('게시글 ID가 없습니다.');
+      }
+
+      const commentsRef = collection(db, 'posts', id, 'comments');
+      await addDoc(commentsRef, newCommentDoc);
       setNewComment('');
     } catch (error) {
       console.error('댓글 작성 중 오류:', error);

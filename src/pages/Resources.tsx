@@ -40,7 +40,7 @@ interface ResourcePost {
 }
 
 const Resources = () => {
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   const [posts, setPosts] = useState<ResourcePost[]>([
     {
       id: 1,
@@ -135,7 +135,7 @@ const Resources = () => {
         id: Math.max(...posts.map(p => p.id)) + 1,
         title: editTitle,
         content: editContent,
-        author: user?.name || '관리자',
+        author: currentUser?.name || '관리자',
         date: new Date().toISOString().split('T')[0],
         category: editCategory,
         views: 0,
@@ -152,7 +152,7 @@ const Resources = () => {
         <Typography variant="h4" component="h1">
           관광교사 임용자료
         </Typography>
-        {user?.role === 'admin' && (
+        {currentUser?.role === 'admin' && (
           <Button
             variant="contained"
             startIcon={<AddIcon />}
@@ -172,7 +172,7 @@ const Resources = () => {
               <TableCell>작성자</TableCell>
               <TableCell>작성일</TableCell>
               <TableCell align="center">조회수</TableCell>
-              {user?.role === 'admin' && (
+              {currentUser?.role === 'admin' && (
                 <TableCell align="center">관리</TableCell>
               )}
             </TableRow>
@@ -185,7 +185,7 @@ const Resources = () => {
                 <TableCell>{post.author}</TableCell>
                 <TableCell>{post.date}</TableCell>
                 <TableCell align="center">{post.views}</TableCell>
-                {user?.role === 'admin' && (
+                {currentUser?.role === 'admin' && (
                   <TableCell align="center">
                     <IconButton
                       size="small"
