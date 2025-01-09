@@ -44,14 +44,15 @@ const Register = () => {
   };
 
   const validatePhoneNumber = (phone: string) => {
-    const phoneRegex = /^01[0-9]-?[0-9]{4}-?[0-9]{4}$/;
-    return phoneRegex.test(phone);
+    // 숫자만 추출
+    const numbers = phone.replace(/\D/g, '');
+    return numbers.length === 10 || numbers.length === 11;
   };
 
   const setupRecaptcha = () => {
     try {
-      const recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        size: 'invisible',
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'normal',  // 'invisible'에서 'normal'로 변경
         callback: () => {
           console.log('reCAPTCHA verified');
         },
@@ -60,7 +61,7 @@ const Register = () => {
         }
       });
 
-      window.recaptchaVerifier = recaptchaVerifier;
+      window.recaptchaVerifier.render();
     } catch (error) {
       console.error('reCAPTCHA setup error:', error);
       setError('reCAPTCHA 설정에 실패했습니다.');
@@ -90,9 +91,14 @@ const Register = () => {
       setupRecaptcha();
       
       // 한국 전화번호 형식으로 변환 (+82)
-      // 하이픈 제거 및 앞의 0 제거
-      const cleanPhoneNumber = phoneNumber.replace(/-/g, '').replace(/^0/, '');
-      const formattedPhoneNumber = '+82' + cleanPhoneNumber;
+      const cleanPhoneNumber = phoneNumber.replace(/\D/g, '');
+      let formattedPhoneNumber = '';
+      
+      if (cleanPhoneNumber.startsWith('0')) {
+        formattedPhoneNumber = '+82' + cleanPhoneNumber.slice(1);
+      } else {
+        formattedPhoneNumber = '+82' + cleanPhoneNumber;
+      }
       
       console.log('Sending verification to:', formattedPhoneNumber); // 디버깅용
       
@@ -269,6 +275,12 @@ const Register = () => {
                 }}
               />
             </Box>
+
+            {/* reCAPTCHA 컨테이너 */}
+            <Box sx={{ mb: 2 }}>
+              <div id="recaptcha-container"></div>
+            </Box>
+
             {isVerificationSent && !isVerified && (
               <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
                 <TextField
@@ -332,7 +344,6 @@ const Register = () => {
           </Box>
         </Paper>
       </Container>
-      <div id="recaptcha-container"></div>
     </PageTransition>
   );
 };
