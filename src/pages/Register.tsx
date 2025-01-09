@@ -18,7 +18,7 @@ import { auth } from '../firebase';
 
 declare global {
   interface Window {
-    recaptchaVerifier: RecaptchaVerifier;
+    recaptchaVerifier: RecaptchaVerifier | undefined;
     confirmationResult: any;
   }
 }
@@ -51,15 +51,29 @@ const Register = () => {
   };
 
   const setupInvisibleRecaptcha = () => {
-    if (window.recaptchaVerifier) {
-      window.recaptchaVerifier.clear();
+    try {
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = undefined;
+      }
+
+      const container = document.getElementById('invisible-recaptcha');
+      if (container) {
+        container.innerHTML = '';
+      }
+
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'invisible-recaptcha', {
+        size: 'invisible',
+        callback: () => {
+          console.log('reCAPTCHA verified');
+        },
+      });
+
+      return window.recaptchaVerifier;
+    } catch (error) {
+      console.error('Error setting up reCAPTCHA:', error);
+      throw error;
     }
-    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'invisible-recaptcha', {
-      size: 'invisible',
-      callback: () => {
-        console.log('reCAPTCHA verified');
-      },
-    });
   };
 
   const handleSendVerification = async () => {
@@ -72,7 +86,7 @@ const Register = () => {
       setIsSendingCode(true);
       setError('');
 
-      setupInvisibleRecaptcha();
+      const verifier = setupInvisibleRecaptcha();
 
       // 한국 전화번호 형식으로 변환 (+82)
       const cleanPhoneNumber = phoneNumber.replace(/[^0-9]/g, '');
@@ -84,7 +98,7 @@ const Register = () => {
       const confirmationResult = await signInWithPhoneNumber(
         auth,
         formattedPhoneNumber,
-        window.recaptchaVerifier
+        verifier
       );
       
       window.confirmationResult = confirmationResult;
