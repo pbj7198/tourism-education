@@ -52,12 +52,19 @@ const Register = () => {
   const setupRecaptcha = () => {
     try {
       window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        size: 'normal',  // 'invisible'에서 'normal'로 변경
-        callback: () => {
-          console.log('reCAPTCHA verified');
+        size: 'normal',
+        callback: (response: any) => {
+          console.log('reCAPTCHA verified:', response);
+          // reCAPTCHA가 확인되면 자동으로 인증번호 전송
+          if (response) {
+            handleSendVerification();
+          }
         },
         'expired-callback': () => {
           setError('reCAPTCHA가 만료되었습니다. 다시 시도해주세요.');
+          if (window.recaptchaVerifier) {
+            window.recaptchaVerifier.clear();
+          }
         }
       });
 
@@ -77,19 +84,7 @@ const Register = () => {
     try {
       setIsSendingCode(true);
       setError('');
-      
-      // 기존 reCAPTCHA가 있다면 제거
-      if (window.recaptchaVerifier) {
-        try {
-          await window.recaptchaVerifier.clear();
-        } catch (error) {
-          console.error('Failed to clear reCAPTCHA:', error);
-        }
-      }
 
-      // 새로운 reCAPTCHA 설정
-      setupRecaptcha();
-      
       // 한국 전화번호 형식으로 변환 (+82)
       const cleanPhoneNumber = phoneNumber.replace(/\D/g, '');
       let formattedPhoneNumber = '';
@@ -101,9 +96,10 @@ const Register = () => {
       }
       
       console.log('Sending verification to:', formattedPhoneNumber); // 디버깅용
-      
+
       if (!window.recaptchaVerifier) {
-        throw new Error('reCAPTCHA가 초기화되지 않았습니다.');
+        setupRecaptcha();
+        return;
       }
 
       const confirmationResult = await signInWithPhoneNumber(
@@ -125,6 +121,16 @@ const Register = () => {
         setError('일일 SMS 할당량을 초과했습니다. 나중에 다시 시도해주세요.');
       } else {
         setError(error.message || '인증번호 발송에 실패했습니다.');
+      }
+      
+      // 오류 발생 시 reCAPTCHA 초기화
+      if (window.recaptchaVerifier) {
+        try {
+          await window.recaptchaVerifier.clear();
+          setupRecaptcha();
+        } catch (error) {
+          console.error('Failed to clear reCAPTCHA:', error);
+        }
       }
     } finally {
       setIsSendingCode(false);
