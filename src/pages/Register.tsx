@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
-import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { signInWithPhoneNumber, RecaptchaVerifier } from 'firebase/auth';
 import { auth } from '../firebase';
 
 declare global {
@@ -37,16 +37,6 @@ const Register = () => {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSendingCode, setIsSendingCode] = useState(false);
-  const [showRecaptcha, setShowRecaptcha] = useState(false);
-
-  useEffect(() => {
-    // 컴포넌트가 마운트될 때는 reCAPTCHA를 초기화하지 않음
-    return () => {
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
-      }
-    };
-  }, []);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
@@ -55,66 +45,34 @@ const Register = () => {
 
   const validatePhoneNumber = (phone: string) => {
     const numbers = phone.replace(/\D/g, '');
-    // 한국 전화번호 형식 검증 (10-11자리)
     const isValidLength = numbers.length === 10 || numbers.length === 11;
     const startsWithValidPrefix = numbers.startsWith('01');
     return isValidLength && startsWithValidPrefix;
   };
 
-  const setupRecaptcha = () => {
-    try {
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
-      }
-
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        size: 'normal',
-        callback: async (response: any) => {
-          console.log('reCAPTCHA verified successfully', response);
-          try {
-            await handleSendVerificationCode();
-          } catch (error) {
-            console.error('Verification code send error:', error);
-            setError('인증번호 전송에 실패했습니다. 잠시 후 다시 시도해주세요.');
-            setShowRecaptcha(false);
-          }
-        },
-        'expired-callback': () => {
-          setError('reCAPTCHA가 만료되었습니다. 다시 시도해주세요.');
-          setShowRecaptcha(false);
-          if (window.recaptchaVerifier) {
-            window.recaptchaVerifier.clear();
-          }
-        }
-      });
-
-      window.recaptchaVerifier.render();
-    } catch (error) {
-      console.error('reCAPTCHA setup error:', error);
-      setError('reCAPTCHA 설정에 실패했습니다. 다시 시도해주세요.');
-      setShowRecaptcha(false);
+  const setupInvisibleRecaptcha = () => {
+    if (window.recaptchaVerifier) {
+      window.recaptchaVerifier.clear();
     }
+    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'invisible-recaptcha', {
+      size: 'invisible',
+      callback: () => {
+        console.log('reCAPTCHA verified');
+      },
+    });
   };
 
-  const handleSendVerification = () => {
+  const handleSendVerification = async () => {
     if (!validatePhoneNumber(phoneNumber)) {
       setError('올바른 휴대폰 번호를 입력해주세요. (예: 01012345678)');
       return;
     }
-    setShowRecaptcha(true);
-    setTimeout(() => {
-      setupRecaptcha();
-    }, 100);
-  };
 
-  const handleSendVerificationCode = async () => {
     try {
       setIsSendingCode(true);
       setError('');
 
-      if (!window.recaptchaVerifier) {
-        throw new Error('reCAPTCHA가 초기화되지 않았습니다.');
-      }
+      setupInvisibleRecaptcha();
 
       // 한국 전화번호 형식으로 변환 (+82)
       const cleanPhoneNumber = phoneNumber.replace(/[^0-9]/g, '');
@@ -131,7 +89,6 @@ const Register = () => {
       
       window.confirmationResult = confirmationResult;
       setIsVerificationSent(true);
-      setShowRecaptcha(false); // 인증번호 전송 후 reCAPTCHA 숨김
       setError('');
     } catch (error: any) {
       console.error('Phone verification error:', error);
@@ -152,7 +109,6 @@ const Register = () => {
       }
       
       setError(errorMessage);
-      setShowRecaptcha(false);
     } finally {
       setIsSendingCode(false);
     }
@@ -301,12 +257,8 @@ const Register = () => {
               />
             </Box>
 
-            {/* reCAPTCHA 컨테이너 조건부 렌더링 */}
-            {showRecaptcha && (
-              <Box sx={{ mb: 2, mt: -1 }}>
-                <div id="recaptcha-container"></div>
-              </Box>
-            )}
+            {/* Invisible reCAPTCHA container */}
+            <div id="invisible-recaptcha"></div>
 
             {isVerificationSent && !isVerified && (
               <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
