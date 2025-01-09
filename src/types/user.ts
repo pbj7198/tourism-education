@@ -2,6 +2,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  phoneNumber: string;
   role: 'admin' | 'user';
   createdAt: string;
   status: 'active' | 'blocked';
@@ -18,7 +19,10 @@ export interface LoginCredentials {
   password: string;
 }
 
-export interface RegisterCredentials extends LoginCredentials {
+export interface RegisterCredentials {
+  email: string;
+  password: string;
   name: string;
-  confirmPassword: string;
+  phoneNumber: string;
+  confirmPassword?: string;
 } 

@@ -14,7 +14,7 @@ import {
   updateDoc,
   deleteDoc,
 } from 'firebase/firestore';
-import { auth, db } from '../firebase/config';
+import { auth, db } from '../firebase';
 import { User } from '../types/user';
 
 export const registerUser = async (

@@ -1,130 +1,339 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Container, Paper, Typography, TextField, Button, Box, Alert } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import {
+  Container,
+  Paper,
+  Typography,
+  TextField,
+  Button,
+  Box,
+  Alert,
+  InputAdornment,
+  CircularProgress,
+} from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
-import { RegisterCredentials } from '../types/user';
+import PageTransition from '../components/PageTransition';
+import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { auth } from '../firebase';
+
+declare global {
+  interface Window {
+    recaptchaVerifier: RecaptchaVerifier;
+    confirmationResult: any;
+  }
+}
 
 const Register = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
-  const [error, setError] = useState<string>('');
-  const [credentials, setCredentials] = useState<RegisterCredentials>({
-    email: '',
-    password: '',
-    confirmPassword: '',
-    name: '',
-  });
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [isVerificationSent, setIsVerificationSent] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSendingCode, setIsSendingCode] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setCredentials(prev => ({
-      ...prev,
-      [name]: value,
-    }));
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+    return emailRegex.test(email);
   };
 
-  const validateForm = () => {
-    if (credentials.password !== credentials.confirmPassword) {
-      setError('비밀번호가 일치하지 않습니다.');
-      return false;
+  const validatePhoneNumber = (phone: string) => {
+    const phoneRegex = /^01[0-9]-?[0-9]{4}-?[0-9]{4}$/;
+    return phoneRegex.test(phone);
+  };
+
+  const setupRecaptcha = () => {
+    try {
+      const recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'invisible',
+        callback: () => {
+          console.log('reCAPTCHA verified');
+        },
+        'expired-callback': () => {
+          setError('reCAPTCHA가 만료되었습니다. 다시 시도해주세요.');
+        }
+      });
+
+      window.recaptchaVerifier = recaptchaVerifier;
+    } catch (error) {
+      console.error('reCAPTCHA setup error:', error);
+      setError('reCAPTCHA 설정에 실패했습니다.');
     }
-    if (credentials.password.length < 6) {
-      setError('비밀번호는 6자 이상이어야 합니다.');
-      return false;
+  };
+
+  const handleSendVerification = async () => {
+    if (!validatePhoneNumber(phoneNumber)) {
+      setError('올바른 핸드폰 번호를 입력해주세요.');
+      return;
     }
-    return true;
+
+    try {
+      setIsSendingCode(true);
+      setError('');
+      
+      // 기존 reCAPTCHA가 있다면 제거
+      if (window.recaptchaVerifier) {
+        try {
+          await window.recaptchaVerifier.clear();
+        } catch (error) {
+          console.error('Failed to clear reCAPTCHA:', error);
+        }
+      }
+
+      // 새로운 reCAPTCHA 설정
+      setupRecaptcha();
+      
+      // 한국 전화번호 형식으로 변환 (+82)
+      // 하이픈 제거 및 앞의 0 제거
+      const cleanPhoneNumber = phoneNumber.replace(/-/g, '').replace(/^0/, '');
+      const formattedPhoneNumber = '+82' + cleanPhoneNumber;
+      
+      console.log('Sending verification to:', formattedPhoneNumber); // 디버깅용
+      
+      if (!window.recaptchaVerifier) {
+        throw new Error('reCAPTCHA가 초기화되지 않았습니다.');
+      }
+
+      const confirmationResult = await signInWithPhoneNumber(
+        auth,
+        formattedPhoneNumber,
+        window.recaptchaVerifier
+      );
+      
+      window.confirmationResult = confirmationResult;
+      setIsVerificationSent(true);
+      setError('');
+    } catch (error: any) {
+      console.error('Phone verification error:', error);
+      if (error.code === 'auth/invalid-phone-number') {
+        setError('올바르지 않은 전화번호 형식입니다. 다시 확인해주세요.');
+      } else if (error.code === 'auth/too-many-requests') {
+        setError('너무 많은 인증 시도가 있었습니다. 잠시 후 다시 시도해주세요.');
+      } else if (error.code === 'auth/quota-exceeded') {
+        setError('일일 SMS 할당량을 초과했습니다. 나중에 다시 시도해주세요.');
+      } else {
+        setError(error.message || '인증번호 발송에 실패했습니다.');
+      }
+    } finally {
+      setIsSendingCode(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (!verificationCode) {
+      setError('인증번호를 입력해주세요.');
+      return;
+    }
+
+    try {
+      if (!window.confirmationResult) {
+        setError('인증 세션이 만료되었습니다. 다시 시도해주세요.');
+        return;
+      }
+
+      const result = await window.confirmationResult.confirm(verificationCode);
+      if (result.user) {
+        setIsVerified(true);
+        setError('');
+      }
+    } catch (error: any) {
+      console.error('Code verification error:', error);
+      if (error.code === 'auth/invalid-verification-code') {
+        setError('잘못된 인증번호입니다.');
+      } else if (error.code === 'auth/code-expired') {
+        setError('인증번호가 만료되었습니다. 다시 시도해주세요.');
+      } else {
+        setError('인증에 실패했습니다. 다시 시도해주세요.');
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (!validateForm()) return;
+    // 입력값 검증
+    if (!name || !email || !password || !confirmPassword || !phoneNumber) {
+      setError('모든 필드를 입력해주세요.');
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      setError('올바른 이메일 형식이 아닙니다.');
+      return;
+    }
+
+    if (!validatePhoneNumber(phoneNumber)) {
+      setError('올바른 핸드폰 번호 형식이 아닙니다.');
+      return;
+    }
+
+    if (!isVerified) {
+      setError('핸드폰 인증을 완료해주세요.');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('비밀번호는 6자 이상이어야 합니다.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('비밀번호가 일치하지 않습니다.');
+      return;
+    }
 
     try {
-      await register(credentials);
+      setIsSubmitting(true);
+      await register({ email, password, name, phoneNumber });
       navigate('/');
-    } catch (error) {
-      setError(error instanceof Error ? error.message : '회원가입에 실패했습니다.');
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      setError(error.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <Container maxWidth="sm">
-      <Box sx={{ mt: 8, mb: 4 }}>
-        <Paper elevation={3} sx={{ p: 4 }}>
-          <Typography variant="h5" component="h1" align="center" gutterBottom>
+    <PageTransition>
+      <Container maxWidth="sm" sx={{ py: 6 }}>
+        <Paper elevation={0} sx={{ p: 4, borderRadius: '12px', border: '1px solid #e0e0e0' }}>
+          <Typography variant="h5" component="h1" gutterBottom align="center" sx={{ mb: 4 }}>
             회원가입
           </Typography>
-          
+
           {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <Alert severity="error" sx={{ mb: 3 }}>
               {error}
             </Alert>
           )}
 
           <form onSubmit={handleSubmit}>
             <TextField
-              fullWidth
               label="이름"
-              name="name"
-              value={credentials.name}
-              onChange={handleChange}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              fullWidth
               margin="normal"
               required
+              autoComplete="name"
             />
             <TextField
-              fullWidth
               label="이메일"
-              name="email"
               type="email"
-              value={credentials.email}
-              onChange={handleChange}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              fullWidth
               margin="normal"
               required
+              autoComplete="email"
+              inputProps={{
+                pattern: "[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}",
+                title: "올바른 이메일 형식을 입력해주세요"
+              }}
             />
+            <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+              <TextField
+                label="핸드폰 번호"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                fullWidth
+                margin="normal"
+                required
+                placeholder="01012345678"
+                disabled={isVerified}
+                helperText={isVerified ? "인증완료" : "'-' 없이 숫자만 입력해주세요"}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <Button
+                        onClick={handleSendVerification}
+                        disabled={isVerified || !phoneNumber || isSendingCode}
+                        size="small"
+                      >
+                        {isSendingCode ? (
+                          <CircularProgress size={20} />
+                        ) : (
+                          isVerificationSent ? '재전송' : '인증번호 전송'
+                        )}
+                      </Button>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Box>
+            {isVerificationSent && !isVerified && (
+              <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                <TextField
+                  label="인증번호"
+                  value={verificationCode}
+                  onChange={(e) => setVerificationCode(e.target.value)}
+                  fullWidth
+                  margin="normal"
+                  required
+                  placeholder="인증번호 6자리 입력"
+                />
+                <Button
+                  onClick={handleVerifyCode}
+                  variant="contained"
+                  sx={{ mt: 2 }}
+                >
+                  확인
+                </Button>
+              </Box>
+            )}
             <TextField
-              fullWidth
               label="비밀번호"
-              name="password"
               type="password"
-              value={credentials.password}
-              onChange={handleChange}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              fullWidth
               margin="normal"
               required
-              helperText="비밀번호는 6자 이상이어야 합니다"
+              autoComplete="new-password"
             />
             <TextField
-              fullWidth
               label="비밀번호 확인"
-              name="confirmPassword"
               type="password"
-              value={credentials.confirmPassword}
-              onChange={handleChange}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              fullWidth
               margin="normal"
               required
+              autoComplete="new-password"
             />
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{ mt: 3, mb: 2 }}
-            >
-              회원가입
-            </Button>
+            <Box sx={{ mt: 3 }}>
+              <Button
+                type="submit"
+                variant="contained"
+                fullWidth
+                disabled={isSubmitting || !isVerified}
+                size="large"
+              >
+                {isSubmitting ? '처리 중...' : '회원가입'}
+              </Button>
+            </Box>
           </form>
 
-          <Box sx={{ textAlign: 'center', mt: 2 }}>
-            <Typography variant="body2">
-              이미 계정이 있으신가요?{' '}
-              <Link to="/login" style={{ color: 'primary.main' }}>
-                로그인
-              </Link>
-            </Typography>
+          <Box sx={{ mt: 2, textAlign: 'center' }}>
+            <Button
+              onClick={() => navigate('/login')}
+              sx={{ textDecoration: 'underline' }}
+            >
+              이미 계정이 있으신가요? 로그인
+            </Button>
           </Box>
         </Paper>
-      </Box>
-    </Container>
+      </Container>
+      <div id="recaptcha-container"></div>
+    </PageTransition>
   );
 };
 

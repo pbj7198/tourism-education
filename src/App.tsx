@@ -15,7 +15,10 @@ import Board from './pages/Board';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import AdminUsers from './pages/AdminUsers';
-import backgroundImage from '../public/background.jpg';
+import PostDetail from './pages/PostDetail';
+import PostForm from './pages/PostForm';
+import PostEdit from './pages/PostEdit';
+import backgroundImage from '/background.jpg?url';
 
 const theme = createTheme({
   typography: {
@@ -42,12 +45,21 @@ function App() {
               display: 'flex', 
               flexDirection: 'column', 
               minHeight: '100vh',
-              backgroundImage: `url(${backgroundImage})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundAttachment: 'fixed',
-              backgroundColor: 'rgba(255, 255, 255, 0.9)',
-              backgroundBlendMode: 'overlay',
+              position: 'relative',
+              '&::before': {
+                content: '""',
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundImage: `url(${backgroundImage})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                opacity: 0.8,
+                zIndex: -1,
+              }
             }}
           >
             <Navbar />
@@ -55,11 +67,14 @@ function App() {
               component="main" 
               sx={{ 
                 flexGrow: 1,
-                minHeight: 'calc(100vh - 80px)',
-                marginTop: 0,
+                minHeight: 'calc(100vh - 64px)',
                 position: 'relative',
-                top: '80px',
+                paddingTop: '64px',
                 zIndex: 1,
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                backdropFilter: 'blur(1px)',
+                display: 'flex',
+                flexDirection: 'column',
               }}
             >
               <Routes>
@@ -75,6 +90,9 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/admin/users" element={<AdminUsers />} />
+                <Route path="/posts/:id" element={<PostDetail />} />
+                <Route path="/posts/new" element={<PostForm />} />
+                <Route path="/posts/:id/edit" element={<PostEdit />} />
               </Routes>
             </Box>
             <Footer />
