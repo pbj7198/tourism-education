@@ -35,7 +35,7 @@ interface Post {
 const Posts = () => {
   const navigate = useNavigate();
   const [posts, setPosts] = useState<Post[]>([]);
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -78,7 +78,7 @@ const Posts = () => {
             연구회 공지사항
           </Typography>
           <Box sx={{ display: 'flex', gap: 2 }}>
-            {user?.role === 'admin' && (
+            {currentUser?.role === 'admin' && (
               <>
                 <Button
                   variant="outlined"
@@ -105,7 +105,7 @@ const Posts = () => {
                 <TableCell align="center">작성자</TableCell>
                 <TableCell align="center">작성일</TableCell>
                 <TableCell align="center">조회수</TableCell>
-                {user?.role === 'admin' && (
+                {currentUser?.role === 'admin' && (
                   <TableCell align="center">관리</TableCell>
                 )}
               </TableRow>
@@ -122,7 +122,7 @@ const Posts = () => {
                   <TableCell align="center">{post.author}</TableCell>
                   <TableCell align="center">{post.createdAt}</TableCell>
                   <TableCell align="center">{post.views}</TableCell>
-                  {user?.role === 'admin' && (
+                  {currentUser?.role === 'admin' && (
                     <TableCell align="center">
                       <IconButton 
                         onClick={(e) => {

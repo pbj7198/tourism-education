@@ -19,7 +19,7 @@ import PageTransition from '../components/PageTransition';
 const PostEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isNotice, setIsNotice] = useState(false);
@@ -47,7 +47,7 @@ const PostEdit = () => {
     fetchPost();
   }, [id]);
 
-  if (!user || user.role !== 'admin') {
+  if (!currentUser || currentUser.role !== 'admin') {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Alert severity="error">

@@ -15,7 +15,7 @@ import { JobPost } from '../types/job';
 const JobPostEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   const [error, setError] = useState<string>('');
   const [jobPost, setJobPost] = useState<JobPost>({
     id: '',
@@ -33,12 +33,12 @@ const JobPostEdit = () => {
 
   useEffect(() => {
     // 권한 체크
-    if (!user) {
+    if (!currentUser) {
       navigate('/login');
       return;
     }
 
-    if (user.role !== 'admin') {
+    if (currentUser.role !== 'admin') {
       navigate('/');
       return;
     }
@@ -57,7 +57,7 @@ const JobPostEdit = () => {
     if (id) {
       loadJobPost();
     }
-  }, [id, user, navigate]);
+  }, [id, currentUser, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -70,7 +70,7 @@ const JobPostEdit = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!user) {
+    if (!currentUser) {
       setError('로그인이 필요합니다.');
       return;
     }
@@ -87,7 +87,7 @@ const JobPostEdit = () => {
     }
   };
 
-  if (!user || user.role !== 'admin') {
+  if (!currentUser || currentUser.role !== 'admin') {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Alert severity="error">

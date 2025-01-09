@@ -9,14 +9,17 @@ import {
   Button,
   Divider,
   Alert,
+  IconButton,
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import { JobPost } from '../types/job';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 const JobPostDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   const [jobPost, setJobPost] = useState<JobPost>({
     id: '',
     title: '',
@@ -108,7 +111,7 @@ const JobPostDetail = () => {
               </Typography>
             </Box>
           </Box>
-          {user?.role === 'admin' && (
+          {currentUser?.role === 'admin' && (
             <Box sx={{ display: 'flex', gap: 1 }}>
               <Button
                 variant="outlined"

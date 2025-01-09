@@ -22,7 +22,7 @@ import PageTransition from '../components/PageTransition';
 const AdminUsers = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [error, setError] = useState('');
-  const { user: currentUser } = useAuth();
+  const { currentUser } = useAuth();
 
   useEffect(() => {
     const fetchUsers = async () => {

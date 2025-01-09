@@ -27,11 +27,12 @@ interface Comment {
 const PostDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   const [post, setPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -93,18 +94,26 @@ const PostDetail = () => {
 
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!id || !user || !newComment.trim()) return;
+    if (!currentUser || !newComment.trim()) {
+      setError('댓글을 작성하려면 로그인이 필요합니다.');
+      return;
+    }
 
     try {
       setIsSubmitting(true);
-      await addDoc(collection(db, 'posts', id, 'comments'), {
-        content: newComment,
-        author: user.name,
+      const newCommentDoc: Omit<Comment, 'id'> = {
+        postId: id!,
+        text: newComment,
+        author: currentUser.name,
         createdAt: new Date().toISOString(),
-      });
+        userId: currentUser.id
+      };
+
+      await addDoc(collection(db, 'posts', id, 'comments'), newCommentDoc);
       setNewComment('');
     } catch (error) {
       console.error('댓글 작성 중 오류:', error);
+      setError('댓글 작성에 실패했습니다.');
     } finally {
       setIsSubmitting(false);
     }
@@ -137,7 +146,7 @@ const PostDetail = () => {
               >
                 {post.title}
               </Typography>
-              {user?.role === 'admin' && (
+              {currentUser?.role === 'admin' && (
                 <Box>
                   <IconButton onClick={handleEdit}>
                     <EditIcon />
@@ -185,7 +194,7 @@ const PostDetail = () => {
             </Typography>
 
             {/* 댓글 작성 폼 */}
-            {user && (
+            {currentUser && (
               <Box component="form" onSubmit={handleCommentSubmit} sx={{ mb: 4 }}>
                 <TextField
                   fullWidth

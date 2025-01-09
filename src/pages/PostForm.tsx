@@ -18,14 +18,14 @@ import PageTransition from '../components/PageTransition';
 
 const PostForm = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isNotice, setIsNotice] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  if (!user || user.role !== 'admin') {
+  if (!currentUser || currentUser.role !== 'admin') {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Alert severity="error">
@@ -50,7 +50,7 @@ const PostForm = () => {
       const postData = {
         title,
         content,
-        author: user.name,
+        author: currentUser.name,
         createdAt: new Date().toISOString().split('T')[0],
         views: 0,
         isNotice

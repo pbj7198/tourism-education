@@ -46,7 +46,7 @@ interface JobPost {
 }
 
 const Jobs = () => {
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   const [posts, setPosts] = useState<JobPost[]>([
     {
       id: 1,
@@ -169,7 +169,7 @@ const Jobs = () => {
         id: Math.max(...posts.map(p => p.id)) + 1,
         title: editTitle,
         content: editContent,
-        author: user?.name || '관리자',
+        author: currentUser?.name || '관리자',
         date: new Date().toISOString().split('T')[0],
         category: editCategory,
         isNotice,
@@ -190,7 +190,7 @@ const Jobs = () => {
         <Typography variant="h4" component="h1">
           관광교사 채용소식
         </Typography>
-        {user?.role === 'admin' && (
+        {currentUser?.role === 'admin' && (
           <Button
             variant="contained"
             startIcon={<AddIcon />}
@@ -211,7 +211,7 @@ const Jobs = () => {
               <TableCell>지역</TableCell>
               <TableCell>마감일</TableCell>
               <TableCell align="center">조회수</TableCell>
-              {user?.role === 'admin' && (
+              {currentUser?.role === 'admin' && (
                 <TableCell align="center">관리</TableCell>
               )}
             </TableRow>
@@ -237,7 +237,7 @@ const Jobs = () => {
                 <TableCell>{post.location}</TableCell>
                 <TableCell>{post.deadline}</TableCell>
                 <TableCell align="center">{post.views}</TableCell>
-                {user?.role === 'admin' && (
+                {currentUser?.role === 'admin' && (
                   <TableCell align="center">
                     <IconButton
                       size="small"

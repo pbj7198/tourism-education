@@ -27,7 +27,7 @@ const pages = [
 
 const Navbar = () => {
   const [anchorElNav, setAnchorElNav] = useState<null | HTMLElement>(null);
-  const { user, logout } = useAuth();
+  const { currentUser, logout } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -169,9 +169,9 @@ const Navbar = () => {
 
           {/* Auth Buttons */}
           <Box sx={{ display: 'flex', gap: 1 }}>
-            {user ? (
+            {currentUser ? (
               <>
-                {user.role === 'admin' && (
+                {currentUser.role === 'admin' && (
                   <Button
                     component={RouterLink}
                     to="/admin/users"

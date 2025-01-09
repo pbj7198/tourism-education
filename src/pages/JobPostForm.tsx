@@ -17,7 +17,7 @@ import { JobPostFormData } from '../types/job';
 
 const JobPostForm = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   const [error, setError] = useState<string>('');
   const [formData, setFormData] = useState<JobPostFormData>({
     title: '',
@@ -49,7 +49,7 @@ const JobPostForm = () => {
     }
   };
 
-  if (!user) {
+  if (!currentUser) {
     return (
       <Container maxWidth="md">
         <Box sx={{ mt: 4 }}>
@@ -77,7 +77,7 @@ const JobPostForm = () => {
 
           <form onSubmit={handleSubmit}>
             <Grid container spacing={2}>
-              {user.role === 'admin' && (
+              {currentUser.role === 'admin' && (
                 <Grid item xs={12}>
                   <FormControlLabel
                     control={
