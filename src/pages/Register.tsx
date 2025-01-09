@@ -71,12 +71,20 @@ const Register = () => {
         size: 'normal',
         callback: async (response: any) => {
           console.log('reCAPTCHA verified successfully', response);
-          // reCAPTCHA 확인 후 자동으로 인증번호 전송
-          await handleSendVerificationCode();
+          try {
+            await handleSendVerificationCode();
+          } catch (error) {
+            console.error('Verification code send error:', error);
+            setError('인증번호 전송에 실패했습니다. 잠시 후 다시 시도해주세요.');
+            setShowRecaptcha(false);
+          }
         },
         'expired-callback': () => {
           setError('reCAPTCHA가 만료되었습니다. 다시 시도해주세요.');
           setShowRecaptcha(false);
+          if (window.recaptchaVerifier) {
+            window.recaptchaVerifier.clear();
+          }
         }
       });
 
@@ -259,10 +267,8 @@ const Register = () => {
               margin="normal"
               required
               autoComplete="email"
-              inputProps={{
-                pattern: "[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}",
-                title: "올바른 이메일 형식을 입력해주세요"
-              }}
+              error={email !== '' && !validateEmail(email)}
+              helperText={email !== '' && !validateEmail(email) ? "올바른 이메일 형식을 입력해주세요" : ""}
             />
             <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
               <TextField
