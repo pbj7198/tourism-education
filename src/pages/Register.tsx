@@ -37,6 +37,7 @@ const Register = () => {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSendingCode, setIsSendingCode] = useState(false);
+  const [lastVerificationTime, setLastVerificationTime] = useState<number>(0);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
@@ -59,17 +60,20 @@ const Register = () => {
 
       const container = document.getElementById('invisible-recaptcha');
       if (container) {
-        container.innerHTML = '';
+        while (container.firstChild) {
+          container.removeChild(container.firstChild);
+        }
       }
 
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'invisible-recaptcha', {
+      const verifier = new RecaptchaVerifier(auth, 'invisible-recaptcha', {
         size: 'invisible',
         callback: () => {
           console.log('reCAPTCHA verified');
         },
       });
 
-      return window.recaptchaVerifier;
+      window.recaptchaVerifier = verifier;
+      return verifier;
     } catch (error) {
       console.error('Error setting up reCAPTCHA:', error);
       throw error;
@@ -82,13 +86,18 @@ const Register = () => {
       return;
     }
 
+    const now = Date.now();
+    if (now - lastVerificationTime < 60000) {
+      setError('1분 후에 다시 시도해주세요.');
+      return;
+    }
+
     try {
       setIsSendingCode(true);
       setError('');
 
       const verifier = setupInvisibleRecaptcha();
 
-      // 한국 전화번호 형식으로 변환 (+82)
       const cleanPhoneNumber = phoneNumber.replace(/[^0-9]/g, '');
       const formattedPhoneNumber = cleanPhoneNumber.startsWith('0') 
         ? `+82${cleanPhoneNumber.slice(1)}` 
@@ -103,6 +112,7 @@ const Register = () => {
       
       window.confirmationResult = confirmationResult;
       setIsVerificationSent(true);
+      setLastVerificationTime(now);
       setError('');
     } catch (error: any) {
       console.error('Phone verification error:', error);
@@ -119,7 +129,11 @@ const Register = () => {
           errorMessage = '일일 SMS 할당량을 초과했습니다. 나중에 다시 시도해주세요.';
           break;
         default:
-          errorMessage = '인증번호 발송에 실패했습니다. 다시 시도해주세요.';
+          if (error.message?.includes('reCAPTCHA')) {
+            errorMessage = '인증 프로세스에 문제가 발생했습니다. 페이지를 새로고침한 후 다시 시도해주세요.';
+          } else {
+            errorMessage = '인증번호 발송에 실패했습니다. 다시 시도해주세요.';
+          }
       }
       
       setError(errorMessage);
