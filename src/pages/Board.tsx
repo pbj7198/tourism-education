@@ -207,7 +207,7 @@ const Board = () => {
             <Button onClick={() => setDeleteDialogOpen(false)}>
               취소
             </Button>
-            <Button onClick={() => handleDelete(selectedPost?.id || '', {})} color="error">
+            <Button onClick={(e) => selectedPost?.id && handleDelete(selectedPost.id, e)} color="error">
               삭제
             </Button>
           </DialogActions>
