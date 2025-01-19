@@ -19,7 +19,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DownloadIcon from '@mui/icons-material/Download';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-import { doc, getDoc, deleteDoc, updateDoc, increment, collection, addDoc, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { doc, getDoc, deleteDoc, updateDoc, increment, collection, addDoc, onSnapshot, query, orderBy, Timestamp } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -32,14 +32,14 @@ interface MaterialPost {
   title: string;
   content: string;
   author: {
-    uid: string;
-    email: string;
-    displayName: string | null;
+    id: string;
+    email: string | null;
+    name: string;
   };
+  createdAt: string | Timestamp;
+  views: number;
   fileUrl?: string;
   fileName?: string;
-  createdAt: any;
-  updatedAt: any;
 }
 
 interface Comment {
@@ -67,26 +67,27 @@ const MaterialDetail = () => {
 
   useEffect(() => {
     const fetchPost = async () => {
-      try {
-        if (!id) {
-          setError('게시글 ID가 유효하지 않습니다.');
-          return;
-        }
+      if (!id) {
+        setError('게시글 ID가 유효하지 않습니다.');
+        setLoading(false);
+        return;
+      }
 
+      try {
         const docRef = doc(db, 'materials', id);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
           setPost({
             id: docSnap.id,
-            ...docSnap.data(),
+            ...docSnap.data()
           } as MaterialPost);
         } else {
           setError('게시글을 찾을 수 없습니다.');
         }
-      } catch (err) {
-        setError('게시글을 불러오는 중 오류가 발생했습니다.');
-        console.error('Error fetching post:', err);
+      } catch (error) {
+        console.error('Error fetching post:', error);
+        setError('게시글을 불러오는데 실패했습니다.');
       } finally {
         setLoading(false);
       }
@@ -115,21 +116,20 @@ const MaterialDetail = () => {
   }, [id]);
 
   const handleDelete = async () => {
+    if (!id || !post || !currentUser || currentUser.id !== post.author.id) {
+      return;
+    }
+
     if (!window.confirm('정말로 이 게시글을 삭제하시겠습니까?')) {
       return;
     }
 
     try {
-      if (!id) {
-        setError('게시글 ID가 유효하지 않습니다.');
-        return;
-      }
-
       await deleteDoc(doc(db, 'materials', id));
       navigate('/materials');
-    } catch (err) {
-      setError('게시글 삭제 중 오류가 발생했습니다.');
-      console.error('Error deleting post:', err);
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      setError('게시글 삭제에 실패했습니다.');
     }
   };
 
@@ -214,62 +214,86 @@ const MaterialDetail = () => {
     }
   };
 
+  const formatDate = (date: string | Timestamp) => {
+    if (date instanceof Timestamp) {
+      return date.toDate().toLocaleDateString('ko-KR');
+    }
+    return new Date(date).toLocaleDateString('ko-KR');
+  };
+
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+      <Container maxWidth="lg" sx={{ py: 6, textAlign: 'center' }}>
         <CircularProgress />
-      </Box>
+      </Container>
     );
   }
 
   if (error) {
-    return <Alert severity="error">{error}</Alert>;
+    return (
+      <Container maxWidth="lg" sx={{ py: 6 }}>
+        <Alert severity="error">{error}</Alert>
+      </Container>
+    );
   }
 
   if (!post) {
-    return <Alert severity="info">게시글을 찾을 수 없습니다.</Alert>;
+    return (
+      <Container maxWidth="lg" sx={{ py: 6 }}>
+        <Alert severity="info">게시글을 찾을 수 없습니다.</Alert>
+      </Container>
+    );
   }
-
-  const isAuthor = currentUser && currentUser.email === post.author.email;
 
   return (
     <PageTransition>
-      <Container maxWidth="md">
-        <Paper elevation={3} sx={{ p: 3, mt: 3 }}>
-          <Typography variant="h4" gutterBottom>
-            {post.title}
-          </Typography>
-          
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="body2" color="text.secondary">
-              작성자: {post.author.email}
+      <Container maxWidth="lg" sx={{ py: 6 }}>
+        <Paper elevation={0} sx={{ p: 4, borderRadius: '12px', border: '1px solid #e0e0e0' }}>
+          {/* 게시글 헤더 */}
+          <Box sx={{ mb: 4, borderBottom: '1px solid #e0e0e0', pb: 3 }}>
+            <Typography variant="h5" component="h1" gutterBottom sx={{ mb: 2 }}>
+              {post.title}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              작성일: {new Date(post.createdAt.toDate()).toLocaleString()}
-            </Typography>
+            <Box sx={{ display: 'flex', gap: 2, color: '#666', fontSize: '0.9rem' }}>
+              <Box>작성자: {post.author.name}</Box>
+              <Divider orientation="vertical" flexItem />
+              <Box>작성일: {formatDate(post.createdAt)}</Box>
+              <Divider orientation="vertical" flexItem />
+              <Box>조회수: {post.views}</Box>
+            </Box>
           </Box>
 
-          <Typography variant="body1" paragraph>
+          {/* 게시글 본문 */}
+          <Box sx={{ mb: 4, minHeight: '200px', whiteSpace: 'pre-wrap' }}>
             {post.content}
-          </Typography>
+          </Box>
 
-          {post.fileUrl && (
-            <Button
-              variant="contained"
-              startIcon={<CloudDownloadIcon />}
-              onClick={handleDownload}
-              sx={{ mt: 2 }}
-            >
-              {post.fileName || '파일 다운로드'} ({post.fileName?.split('.').pop()?.toUpperCase()})
-            </Button>
+          {/* 첨부파일 */}
+          {post.fileUrl && post.fileName && (
+            <Box sx={{ mb: 4, pt: 3, borderTop: '1px solid #e0e0e0' }}>
+              <Button
+                startIcon={<CloudDownloadIcon />}
+                onClick={handleDownload}
+              >
+                {post.fileName}
+              </Button>
+            </Box>
           )}
 
-          {isAuthor && (
-            <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
-              <Button variant="contained" color="primary" onClick={() => navigate(`/materials/${id}/edit`)}>
+          {/* 작성자 액션 버튼 */}
+          {currentUser && currentUser.id === post.author.id && (
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', pt: 3, borderTop: '1px solid #e0e0e0' }}>
+              <Button
+                variant="outlined"
+                onClick={() => navigate(`/materials/${id}/edit`)}
+              >
                 수정
               </Button>
-              <Button variant="contained" color="error" onClick={handleDelete}>
+              <Button
+                variant="outlined"
+                color="error"
+                onClick={handleDelete}
+              >
                 삭제
               </Button>
             </Box>
