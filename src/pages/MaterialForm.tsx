@@ -13,13 +13,11 @@ import {
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firebase';
+import { collection, addDoc } from 'firebase/firestore';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
-import { User } from 'firebase/auth';
-import { auth } from '../firebase';
-import { uploadFile } from '../utils/storage';
 
 const MaterialForm = () => {
   const navigate = useNavigate();
@@ -33,15 +31,9 @@ const MaterialForm = () => {
   const [error, setError] = useState('');
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  if (!currentUser) {
-    navigate('/materials');
-    return null;
-  }
-
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const selectedFile = e.target.files[0];
-      // 파일 크기 제한 (50MB)
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
       if (selectedFile.size > 50 * 1024 * 1024) {
         setError('파일 크기는 50MB를 초과할 수 없습니다.');
         return;
@@ -53,51 +45,79 @@ const MaterialForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    setError('');
+    if (!currentUser) return;
 
     try {
-      if (!title.trim() || !content.trim()) {
-        throw new Error('제목과 내용을 모두 입력해주세요.');
-      }
+      setIsSubmitting(true);
+      setError('');
 
       let fileUrl = '';
       let fileName = '';
 
       if (file) {
-        try {
-          // Google Cloud Storage에 파일 업로드
-          fileUrl = await uploadFile(file);
-          fileName = file.name;
-        } catch (uploadError) {
-          console.error('파일 업로드 오류:', uploadError);
-          throw new Error('파일 업로드에 실패했습니다. 다시 시도해주세요.');
-        }
+        // 파일명에 타임스탬프 추가
+        const timestamp = Date.now();
+        const fileExtension = file.name.split('.').pop();
+        const storageRef = ref(storage, `job/${timestamp}_${file.name}`);
+        
+        // 파일 업로드 진행률 모니터링
+        const uploadTask = uploadBytesResumable(storageRef, file);
+        
+        await new Promise<void>((resolve, reject) => {
+          uploadTask.on(
+            'state_changed',
+            (snapshot) => {
+              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+              setUploadProgress(progress);
+            },
+            (error) => {
+              console.error('파일 업로드 중 오류:', error);
+              setError('파일 업로드에 실패했습니다.');
+              reject(error);
+            },
+            async () => {
+              fileUrl = await getDownloadURL(uploadTask.snapshot.ref);
+              fileName = file.name;
+              resolve();
+            }
+          );
+        });
       }
 
-      const user = auth.currentUser as User;
-      const docRef = await addDoc(collection(db, 'materials'), {
+      const postData = {
         title,
         content,
         author: {
-          uid: user.uid,
-          email: user.email,
-          displayName: user.displayName
+          uid: currentUser.uid,
+          email: currentUser.email,
+          displayName: currentUser.displayName
         },
-        fileUrl,
-        fileName,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      });
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        views: 0,
+        ...(fileUrl && { fileUrl, fileName })
+      };
 
-      navigate(`/materials/${docRef.id}`);
+      await addDoc(collection(db, 'materials'), postData);
+      navigate('/materials');
     } catch (err) {
-      console.error('Error:', err);
-      setError(err instanceof Error ? err.message : '게시글 작성에 실패했습니다.');
+      console.error('게시글 등록 중 오류:', err);
+      setError('게시글 등록에 실패했습니다.');
     } finally {
       setIsSubmitting(false);
+      setUploadProgress(0);
     }
   };
+
+  if (!currentUser) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Alert severity="warning">
+          게시글을 작성하려면 로그인이 필요합니다.
+        </Alert>
+      </Container>
+    );
+  }
 
   return (
     <PageTransition>
@@ -156,6 +176,13 @@ const MaterialForm = () => {
                   <IconButton size="small" onClick={() => setFile(null)}>
                     <DeleteIcon />
                   </IconButton>
+                </Box>
+              )}
+              {uploadProgress > 0 && uploadProgress < 100 && (
+                <Box sx={{ mt: 1 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    업로드 중: {uploadProgress.toFixed(0)}%
+                  </Typography>
                 </Box>
               )}
             </Box>

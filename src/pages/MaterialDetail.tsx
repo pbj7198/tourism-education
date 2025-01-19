@@ -135,7 +135,14 @@ const MaterialDetail = () => {
 
   const handleDownload = () => {
     if (post?.fileUrl) {
-      window.open(post.fileUrl, '_blank');
+      const fileName = post.fileName || '다운로드파일';
+      
+      const link = document.createElement('a');
+      link.href = post.fileUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   };
 
@@ -253,7 +260,7 @@ const MaterialDetail = () => {
               onClick={handleDownload}
               sx={{ mt: 2 }}
             >
-              {post.fileName || '파일 다운로드'}
+              {post.fileName || '파일 다운로드'} ({post.fileName?.split('.').pop()?.toUpperCase()})
             </Button>
           )}
 
