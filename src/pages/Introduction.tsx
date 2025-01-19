@@ -8,16 +8,17 @@ const Introduction = () => {
         <Paper elevation={3} sx={{ p: 4 }}>
           <Box sx={{ textAlign: 'center', mb: 4 }}>
             <Box sx={{ 
-              width: '25%',
+              width: '300px',
               margin: '0 auto',
               marginBottom: '2rem'
             }}>
               <img
-                src="/ four_members.jpeg"
+                src="/four_members.jpeg"
                 alt="한국관광교육연구회 소개"
                 style={{ 
                   width: '100%',
-                  height: 'auto'
+                  height: 'auto',
+                  maxWidth: '300px'
                 }}
               />
             </Box>
