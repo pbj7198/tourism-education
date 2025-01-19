@@ -1,40 +1,53 @@
-import { Container, Box } from '@mui/material';
+import { Container, Box, Paper } from '@mui/material';
 import PageTransition from '../components/PageTransition';
 
 const Home = () => {
   return (
     <PageTransition>
-      <Box 
+      <Container 
+        maxWidth="lg" 
         sx={{ 
+          py: 4,
           backgroundColor: '#fff',
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          pt: '64px' // Navbar 높이만큼 padding-top 추가
+          '& .MuiPaper-root': {
+            boxShadow: 'none',
+            border: 'none',
+            backgroundColor: '#fff'
+          }
         }}
+        disableGutters
       >
-        <Container maxWidth="md">
+        <Paper 
+          elevation={0} 
+          sx={{ 
+            p: 4, 
+            backgroundColor: '#fff',
+            borderRadius: 0
+          }}
+        >
           <Box
             sx={{
               display: 'flex',
               justifyContent: 'center',
               alignItems: 'center',
-              py: 4
+              py: 4,
+              backgroundColor: '#fff',
+              width: '100%'
             }}
           >
             <img
               src="/two_members.jpeg"
               alt="한국관광교육연구회 회원"
               style={{
-                maxWidth: '100%',
+                maxWidth: '60%',
                 height: 'auto',
-                backgroundColor: '#fff'
+                backgroundColor: '#fff',
+                display: 'block'
               }}
             />
           </Box>
-        </Container>
-      </Box>
+        </Paper>
+      </Container>
     </PageTransition>
   );
 };
