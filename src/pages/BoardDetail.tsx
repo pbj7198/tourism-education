@@ -225,6 +225,9 @@ const BoardDetail = () => {
     );
   }
 
+  // author 객체가 없는 경우를 위한 기본값 설정
+  const author = post.author || { name: '익명', email: null, id: '' };
+
   return (
     <PageTransition>
       <Container maxWidth="lg" sx={{ py: 6 }}>
@@ -235,11 +238,11 @@ const BoardDetail = () => {
               {post.title}
             </Typography>
             <Box sx={{ display: 'flex', gap: 2, color: '#666', fontSize: '0.9rem' }}>
-              <Box>작성자: {post.author.name || '익명'}</Box>
+              <Box>작성자: {author.name || '익명'}</Box>
               <Divider orientation="vertical" flexItem />
               <Box>작성일: {formatDate(post.createdAt)}</Box>
               <Divider orientation="vertical" flexItem />
-              <Box>조회수: {post.views}</Box>
+              <Box>조회수: {post.views || 0}</Box>
             </Box>
           </Box>
 
@@ -249,7 +252,7 @@ const BoardDetail = () => {
           </Box>
 
           {/* 작성자 또는 관리자 액션 버튼 */}
-          {currentUser && (currentUser.email === post.author.email || currentUser.role === 'admin') && (
+          {currentUser && (currentUser.email === author.email || currentUser.role === 'admin') && (
             <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', pt: 3, borderTop: '1px solid #e0e0e0' }}>
               <Button
                 variant="outlined"
