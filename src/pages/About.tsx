@@ -40,8 +40,6 @@ const About = () => {
               <Box>작성자: 관리자</Box>
               <Divider orientation="vertical" flexItem />
               <Box>작성일: 2024-01-07</Box>
-              <Divider orientation="vertical" flexItem />
-              <Box>조회수: 1</Box>
             </Box>
           </Box>
 
@@ -59,7 +57,7 @@ const About = () => {
               justifyContent: 'center',
               alignItems: 'center',
               width: '100%',
-              mb: 1
+              mb: 0
             }}>
               <img
                 src={introImage}
@@ -99,14 +97,14 @@ const About = () => {
             </Box>
 
             {/* 주요활동 섹션 */}
-            <Box>
+            <Box sx={{ width: '100%' }}>
               <Typography 
                 variant="h5" 
                 sx={{ 
                   fontWeight: 600,
                   color: '#333',
-                  mb: 3,
-                  pb: 2,
+                  mb: 1,
+                  pb: 0.5,
                   borderBottom: '2px solid #f0f0f0'
                 }}
               >
