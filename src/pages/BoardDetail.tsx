@@ -263,7 +263,7 @@ const BoardDetail = () => {
               )}
             </Box>
             <Box sx={{ display: 'flex', gap: 2, color: '#666', fontSize: '0.9rem' }}>
-              <Box>작성자: {maskUserId(post.author?.email || null)}</Box>
+              <Box>작성자: {maskUserId(post.author?.email)}</Box>
               <Divider orientation="vertical" flexItem />
               <Box>작성일: {formatDate(post.createdAt)}</Box>
               <Divider orientation="vertical" flexItem />

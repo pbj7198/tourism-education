@@ -157,7 +157,7 @@ const Board = () => {
                       )}
                     </Box>
                   </TableCell>
-                  <TableCell align="center">{maskUserId(post.author?.email || null)}</TableCell>
+                  <TableCell align="center">{maskUserId(post.author?.email)}</TableCell>
                   <TableCell align="center">{formatDate(post.createdAt)}</TableCell>
                   <TableCell align="center">{post.views || 0}</TableCell>
                   {currentUser && (currentUser.email === post.author?.email || currentUser.role === 'admin') && (
