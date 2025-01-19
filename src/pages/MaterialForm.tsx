@@ -72,13 +72,13 @@ const MaterialForm = () => {
       let fileName = '';
 
       if (file) {
-        const fileRef = ref(storage, `materials/${Date.now()}_${file.name}`);
+        const fileRef = ref(storage, `teaching_materials/${Date.now()}_${file.name}`);
         await uploadBytes(fileRef, file);
         fileUrl = await getDownloadURL(fileRef);
         fileName = file.name;
       }
 
-      const docRef = await addDoc(collection(db, 'materials'), {
+      const docRef = await addDoc(collection(db, 'teaching_materials'), {
         title: title.trim(),
         content: content.trim(),
         author: {
@@ -92,7 +92,7 @@ const MaterialForm = () => {
         fileName
       });
 
-      navigate('/materials');
+      navigate(`/materials/${docRef.id}`);
     } catch (error) {
       console.error('게시글 작성 중 오류:', error);
       setError('게시글 작성에 실패했습니다. 다시 시도해주세요.');

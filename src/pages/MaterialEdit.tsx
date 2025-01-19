@@ -55,7 +55,7 @@ const MaterialEdit = () => {
       if (!id) return;
 
       try {
-        const docRef = doc(db, 'materials', id);
+        const docRef = doc(db, 'teaching_materials', id);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
@@ -126,13 +126,13 @@ const MaterialEdit = () => {
       let fileName = currentFileName;
 
       if (file) {
-        const fileRef = ref(storage, `materials/${Date.now()}_${file.name}`);
+        const fileRef = ref(storage, `teaching_materials/${Date.now()}_${file.name}`);
         await uploadBytes(fileRef, file);
         fileUrl = await getDownloadURL(fileRef);
         fileName = file.name;
       }
 
-      const docRef = doc(db, 'materials', id);
+      const docRef = doc(db, 'teaching_materials', id);
       await updateDoc(docRef, {
         title,
         content,
