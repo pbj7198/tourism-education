@@ -58,6 +58,7 @@ const MaterialEdit = () => {
       [{ 'color': [] }, { 'background': [] }],
       [{ 'list': 'ordered'}, { 'list': 'bullet' }],
       [{ 'align': [] }],
+      ['link'],
       ['table'],
       ['clean']
     ],
@@ -71,6 +72,7 @@ const MaterialEdit = () => {
     'color', 'background',
     'list', 'bullet',
     'align',
+    'link',
     'table'
   ];
 

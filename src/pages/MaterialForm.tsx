@@ -41,6 +41,7 @@ const MaterialForm = () => {
       [{ 'color': [] }, { 'background': [] }],
       [{ 'list': 'ordered'}, { 'list': 'bullet' }],
       [{ 'align': [] }],
+      ['link'],
       ['table'],
       ['clean']
     ],
@@ -54,6 +55,7 @@ const MaterialForm = () => {
     'color', 'background',
     'list', 'bullet',
     'align',
+    'link',
     'table'
   ];
 
@@ -102,9 +104,9 @@ const MaterialForm = () => {
         fileName = file.name;
       }
 
-      const docRef = await addDoc(collection(db, 'materials'), {
-        title,
-        content,
+      await addDoc(collection(db, 'materials'), {
+        title: title.trim(),
+        content: content.trim(),
         author: {
           id: currentUser.id,
           email: currentUser.email,
