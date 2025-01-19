@@ -7,11 +7,20 @@ const Introduction = () => {
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Paper elevation={3} sx={{ p: 4 }}>
           <Box sx={{ textAlign: 'center', mb: 4 }}>
-            <img
-              src="/introduction.png"
-              alt="한국관광교육연구회 소개"
-              style={{ maxWidth: '100%', height: 'auto', marginBottom: '2rem' }}
-            />
+            <Box sx={{ 
+              width: '50%', 
+              margin: '0 auto',
+              marginBottom: '2rem'
+            }}>
+              <img
+                src="/ four_members.jpeg"
+                alt="한국관광교육연구회 소개"
+                style={{ 
+                  width: '100%',
+                  height: 'auto'
+                }}
+              />
+            </Box>
           </Box>
           <Typography variant="h4" component="h1" gutterBottom align="center">
             한국관광교육연구회
