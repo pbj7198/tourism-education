@@ -13,11 +13,13 @@ import {
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
+import { User } from 'firebase/auth';
+import { auth } from '../firebase';
 
 const MaterialForm = () => {
   const navigate = useNavigate();
@@ -51,73 +53,70 @@ const MaterialForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !content.trim()) return;
-
     setIsSubmitting(true);
     setError('');
 
     try {
+      if (!title.trim() || !content.trim()) {
+        throw new Error('제목과 내용을 모두 입력해주세요.');
+      }
+
       let fileUrl = '';
       let fileName = '';
 
-      // 파일이 있는 경우 업로드
       if (file) {
-        try {
-          const timestamp = Date.now();
-          const fileExtension = file.name.split('.').pop();
-          const uniqueFileName = `materials/${timestamp}_${Math.random().toString(36).substring(2)}.${fileExtension}`;
-          
-          const fileRef = ref(storage, uniqueFileName);
-          const metadata = {
-            contentType: file.type
-          };
+        const storageRef = ref(storage, `materials/${Date.now()}_${file.name}`);
+        
+        // 메타데이터 설정
+        const metadata = {
+          contentType: file.type,
+          customMetadata: {
+            originalName: file.name
+          }
+        };
 
-          // uploadBytesResumable 사용
-          const uploadTask = uploadBytesResumable(fileRef, file, metadata);
+        // 파일 업로드
+        const uploadTask = uploadBytesResumable(storageRef, file, metadata);
+        
+        // 업로드 진행 상황 모니터링
+        uploadTask.on('state_changed',
+          (snapshot) => {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            console.log('Upload is ' + progress + '% done');
+          },
+          (error) => {
+            console.error('Upload error:', error);
+            throw new Error('파일 업로드에 실패했습니다.');
+          }
+        );
 
-          // 업로드 진행 상황 모니터링
-          uploadTask.on('state_changed',
-            (snapshot) => {
-              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-              setUploadProgress(progress);
-            },
-            (error) => {
-              console.error('파일 업로드 중 오류:', error);
-              setError(`파일 업로드 실패: ${error.message}`);
-              setIsSubmitting(false);
-            }
-          );
-
-          // 업로드 완료 대기
-          await uploadTask;
-          
-          // 다운로드 URL 가져오기
-          fileUrl = await getDownloadURL(fileRef);
-          fileName = file.name;
-        } catch (uploadError: any) {
-          console.error('파일 업로드 중 오류:', uploadError);
-          setError(`파일 업로드 실패: ${uploadError.message}`);
-          setIsSubmitting(false);
-          return;
-        }
+        // 업로드 완료 대기
+        await uploadTask;
+        
+        // 다운로드 URL 가져오기
+        fileUrl = await getDownloadURL(storageRef);
+        fileName = file.name;
       }
 
-      // Firestore에 게시글 저장
-      const docRef = await addDoc(collection(db, 'teaching_materials'), {
+      const user = auth.currentUser as User;
+      const docRef = await addDoc(collection(db, 'materials'), {
         title,
         content,
-        authorId: currentUser.email,
-        createdAt: new Date().toISOString(),
-        views: 0,
+        author: {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName
+        },
         fileUrl,
-        fileName
+        fileName,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
       });
 
       navigate(`/materials/${docRef.id}`);
-    } catch (error: any) {
-      console.error('게시글 작성 중 오류:', error);
-      setError(`게시글 작성 실패: ${error.message}`);
-    } finally {
+    } catch (err) {
+      console.error('Error:', err);
+      setError(err instanceof Error ? err.message : '게시글 작성에 실패했습니다.');
       setIsSubmitting(false);
     }
   };
