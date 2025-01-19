@@ -117,7 +117,7 @@ const BoardDetail = () => {
     }
 
     // 작성자이거나 관리자인 경우에만 삭제 가능
-    if (currentUser.id !== post.author.id && currentUser.role !== 'admin') {
+    if (currentUser.email !== post.author.email && currentUser.role !== 'admin') {
       return;
     }
 
@@ -144,8 +144,8 @@ const BoardDetail = () => {
       setIsSubmitting(true);
       const commentData = {
         content: newComment,
-        author: currentUser.name,
-        authorId: currentUser.id,
+        author: currentUser.displayName || currentUser.email?.split('@')[0] || '익명',
+        authorId: currentUser.email,
         createdAt: new Date().toISOString()
       };
 
@@ -251,7 +251,7 @@ const BoardDetail = () => {
           </Box>
 
           {/* 작성자 또는 관리자 액션 버튼 */}
-          {currentUser && (currentUser.id === post.author.id || currentUser.role === 'admin') && (
+          {currentUser && (currentUser.email === post.author.email || currentUser.role === 'admin') && (
             <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', pt: 3, borderTop: '1px solid #e0e0e0' }}>
               <Button
                 variant="outlined"
