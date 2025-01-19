@@ -18,8 +18,8 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import QuillEditor from '../components/QuillEditor';
+import type ReactQuill from 'react-quill';
 
 interface Material {
   id: string;
@@ -39,6 +39,7 @@ const MaterialEdit = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const quillRef = useRef<ReactQuill>(null);
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -48,35 +49,6 @@ const MaterialEdit = () => {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  const modules = useMemo(() => ({
-    toolbar: {
-      container: [
-        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-        [{ 'font': [] }],
-        [{ 'size': ['small', false, 'large', 'huge'] }],
-        ['bold', 'italic', 'underline', 'strike'],
-        [{ 'color': [] }, { 'background': [] }],
-        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-        [{ 'align': [] }],
-        ['link'],
-        ['table'],
-        ['clean']
-      ]
-    }
-  }), []);
-
-  const formats = [
-    'header',
-    'font',
-    'size',
-    'bold', 'italic', 'underline', 'strike',
-    'color', 'background',
-    'list', 'bullet',
-    'align',
-    'link',
-    'table'
-  ];
 
   useEffect(() => {
     const fetchMaterial = async () => {
@@ -210,11 +182,10 @@ const MaterialEdit = () => {
             />
 
             <Box sx={{ mt: 3, mb: 3, '& .ql-container': { height: '400px' } }}>
-              <ReactQuill
+              <QuillEditor
+                ref={quillRef}
                 value={content}
                 onChange={setContent}
-                modules={modules}
-                formats={formats}
                 placeholder="내용을 입력하세요..."
               />
             </Box>

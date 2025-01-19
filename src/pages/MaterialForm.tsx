@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -18,8 +18,8 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import QuillEditor from '../components/QuillEditor';
+import type ReactQuill from 'react-quill';
 
 const MaterialForm = () => {
   const navigate = useNavigate();
@@ -32,35 +32,6 @@ const MaterialForm = () => {
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const modules = useMemo(() => ({
-    toolbar: {
-      container: [
-        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-        [{ 'font': [] }],
-        [{ 'size': ['small', false, 'large', 'huge'] }],
-        ['bold', 'italic', 'underline', 'strike'],
-        [{ 'color': [] }, { 'background': [] }],
-        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-        [{ 'align': [] }],
-        ['link'],
-        ['table'],
-        ['clean']
-      ]
-    }
-  }), []);
-
-  const formats = [
-    'header',
-    'font',
-    'size',
-    'bold', 'italic', 'underline', 'strike',
-    'color', 'background',
-    'list', 'bullet',
-    'align',
-    'link',
-    'table'
-  ];
 
   if (!currentUser) {
     return (
@@ -155,13 +126,10 @@ const MaterialForm = () => {
             />
 
             <Box sx={{ mt: 3, mb: 3, '& .ql-container': { height: '400px' } }}>
-              <ReactQuill
+              <QuillEditor
                 ref={quillRef}
-                theme="snow"
                 value={content}
                 onChange={setContent}
-                modules={modules}
-                formats={formats}
                 placeholder="내용을 입력하세요..."
               />
             </Box>
