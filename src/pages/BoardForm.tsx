@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -78,8 +78,12 @@ const BoardForm = () => {
       const docRef = await addDoc(collection(db, 'board_posts'), {
         title,
         content,
-        authorId: currentUser.email,
-        createdAt: new Date().toISOString(),
+        author: {
+          id: currentUser.id,
+          email: currentUser.email,
+          name: currentUser.email?.split('@')[0] || '익명'
+        },
+        createdAt: serverTimestamp(),
         views: 0,
         fileUrl,
         fileName

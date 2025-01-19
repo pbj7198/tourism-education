@@ -157,24 +157,28 @@ const Board = () => {
                       )}
                     </Box>
                   </TableCell>
-                  <TableCell align="center">{maskUserId(post.author?.email)}</TableCell>
+                  <TableCell align="center">{maskUserId(post.author?.email || null)}</TableCell>
                   <TableCell align="center">{formatDate(post.createdAt)}</TableCell>
                   <TableCell align="center">{post.views || 0}</TableCell>
-                  {currentUser && (currentUser.email === post.author?.email || currentUser.role === 'admin') && (
+                  {currentUser && (
                     <TableCell align="center">
-                      <IconButton
-                        size="small"
-                        onClick={(e) => handleEdit(post.id, e)}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={(e) => handleDelete(post.id, e)}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
+                      {(currentUser.email === post.author?.email || currentUser.role === 'admin') && (
+                        <>
+                          <IconButton
+                            size="small"
+                            onClick={(e) => handleEdit(post.id, e)}
+                          >
+                            <EditIcon />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={(e) => handleDelete(post.id, e)}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </>
+                      )}
                     </TableCell>
                   )}
                 </TableRow>
