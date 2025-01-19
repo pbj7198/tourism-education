@@ -54,7 +54,7 @@ const AdminPosts = () => {
 
   // 관리자가 아닌 경우 접근 제한
   useEffect(() => {
-    if (!currentUser?.role === 'admin') {
+    if (!currentUser || currentUser.role !== 'admin') {
       navigate('/');
     }
   }, [currentUser, navigate]);
@@ -65,7 +65,7 @@ const AdminPosts = () => {
 
   const fetchPosts = async () => {
     try {
-      const collections = ['materials', 'job_posts', 'board_posts'];
+      const collections = [ 'posts', 'materials', 'job_posts', 'board_posts'];
       const collectionRef = collection(db, collections[selectedTab]);
       const q = query(collectionRef, orderBy('createdAt', 'desc'));
       const querySnapshot = await getDocs(q);
@@ -83,7 +83,7 @@ const AdminPosts = () => {
   };
 
   const handleEdit = (post: Post) => {
-    const paths = ['/materials', '/jobs', '/board'];
+    const paths = ['/notice', '/materials', '/jobs', '/board'];
     navigate(`${paths[selectedTab]}/${post.id}/edit`);
   };
 
@@ -91,7 +91,7 @@ const AdminPosts = () => {
     if (!selectedPost) return;
 
     try {
-      const collections = ['materials', 'job_posts', 'board_posts'];
+      const collections = ['posts', 'materials', 'job_posts', 'board_posts'];
       await deleteDoc(doc(db, collections[selectedTab], selectedPost.id));
       setDeleteDialogOpen(false);
       setSelectedPost(null);
@@ -118,6 +118,7 @@ const AdminPosts = () => {
 
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
           <Tabs value={selectedTab} onChange={(_, newValue) => setSelectedTab(newValue)}>
+            <Tab label="연구회 공지사항" />
             <Tab label="임용자료" />
             <Tab label="채용소식" />
             <Tab label="게시판" />
