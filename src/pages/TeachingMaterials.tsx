@@ -26,9 +26,12 @@ import { maskUserId } from '../utils/maskUserId';
 interface MaterialPost {
   id: string;
   title: string;
-  author: string;
-  authorId: string;
-  createdAt: string;
+  author: {
+    uid: string;
+    email: string;
+    displayName: string | null;
+  };
+  createdAt: any;
   views: number;
   fileUrl?: string;
   fileName?: string;
@@ -42,7 +45,7 @@ const TeachingMaterials = () => {
 
   useEffect(() => {
     const q = query(
-      collection(db, 'teaching_materials'),
+      collection(db, 'materials'),
       orderBy('createdAt', 'desc')
     );
 
@@ -114,11 +117,11 @@ const TeachingMaterials = () => {
                   sx={{ cursor: 'pointer' }}
                 >
                   <TableCell>{post.title}</TableCell>
-                  <TableCell align="center">{maskUserId(post.authorId)}</TableCell>
+                  <TableCell align="center">{maskUserId(post.author.email)}</TableCell>
                   <TableCell align="center">
-                    {new Date(post.createdAt).toLocaleDateString()}
+                    {new Date(post.createdAt.toDate()).toLocaleDateString()}
                   </TableCell>
-                  <TableCell align="center">{post.views}</TableCell>
+                  <TableCell align="center">{post.views || 0}</TableCell>
                   <TableCell align="center">
                     {post.fileUrl && (
                       <IconButton
