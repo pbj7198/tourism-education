@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -25,6 +25,7 @@ const MaterialForm = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const quillRef = useRef<ReactQuill>(null);
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -32,20 +33,22 @@ const MaterialForm = () => {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const modules = {
-    toolbar: [
-      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-      [{ 'font': [] }],
-      [{ 'size': ['small', false, 'large', 'huge'] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      [{ 'color': [] }, { 'background': [] }],
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      [{ 'align': [] }],
-      ['link'],
-      ['table'],
-      ['clean']
-    ],
-  };
+  const modules = useMemo(() => ({
+    toolbar: {
+      container: [
+        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+        [{ 'font': [] }],
+        [{ 'size': ['small', false, 'large', 'huge'] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'color': [] }, { 'background': [] }],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        [{ 'align': [] }],
+        ['link'],
+        ['table'],
+        ['clean']
+      ]
+    }
+  }), []);
 
   const formats = [
     'header',
@@ -104,7 +107,7 @@ const MaterialForm = () => {
         fileName = file.name;
       }
 
-      await addDoc(collection(db, 'materials'), {
+      const docRef = await addDoc(collection(db, 'materials'), {
         title: title.trim(),
         content: content.trim(),
         author: {
@@ -153,6 +156,8 @@ const MaterialForm = () => {
 
             <Box sx={{ mt: 3, mb: 3, '& .ql-container': { height: '400px' } }}>
               <ReactQuill
+                ref={quillRef}
+                theme="snow"
                 value={content}
                 onChange={setContent}
                 modules={modules}
