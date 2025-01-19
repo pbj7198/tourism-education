@@ -73,9 +73,9 @@ const PostForm = () => {
         fileName = file.name;
       }
 
-      const postData = {
-        title: title.trim(),
-        content: content.trim(),
+      const docRef = await addDoc(collection(db, 'posts'), {
+        title,
+        content,
         author: {
           id: currentUser.id,
           email: currentUser.email,
@@ -85,9 +85,7 @@ const PostForm = () => {
         views: 0,
         fileUrl,
         fileName
-      };
-
-      const docRef = await addDoc(collection(db, 'posts'), postData);
+      });
       navigate(`/notice/${docRef.id}`);
     } catch (error) {
       console.error('Error creating post:', error);
