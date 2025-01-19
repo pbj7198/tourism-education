@@ -13,6 +13,7 @@ import {
   Avatar,
   Menu,
   MenuItem,
+  CircularProgress,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -24,17 +25,21 @@ import { db, storage } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
 import { maskUserId } from '../utils/maskUserId';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 
 interface MaterialPost {
   id: string;
   title: string;
   content: string;
-  author: string;
-  authorId: string;
-  createdAt: string;
-  views: number;
+  author: {
+    uid: string;
+    email: string;
+    displayName: string | null;
+  };
   fileUrl?: string;
   fileName?: string;
+  createdAt: any;
+  updatedAt: any;
 }
 
 interface Comment {
@@ -46,10 +51,11 @@ interface Comment {
 }
 
 const MaterialDetail = () => {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const [post, setPost] = useState<MaterialPost | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -61,23 +67,28 @@ const MaterialDetail = () => {
 
   useEffect(() => {
     const fetchPost = async () => {
-      if (!id) return;
       try {
-        const docRef = doc(db, 'teaching_materials', id);
+        if (!id) {
+          setError('게시글 ID가 유효하지 않습니다.');
+          return;
+        }
+
+        const docRef = doc(db, 'materials', id);
         const docSnap = await getDoc(docRef);
-        
+
         if (docSnap.exists()) {
-          await updateDoc(docRef, {
-            views: increment(1)
-          });
-          
-          setPost({ id: docSnap.id, ...docSnap.data() } as MaterialPost);
+          setPost({
+            id: docSnap.id,
+            ...docSnap.data(),
+          } as MaterialPost);
         } else {
           setError('게시글을 찾을 수 없습니다.');
         }
-      } catch (error) {
-        console.error('게시글 로드 중 오류:', error);
-        setError('게시글을 불러오는데 실패했습니다.');
+      } catch (err) {
+        setError('게시글을 불러오는 중 오류가 발생했습니다.');
+        console.error('Error fetching post:', err);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -103,25 +114,28 @@ const MaterialDetail = () => {
     return () => unsubscribe();
   }, [id]);
 
-  const handleEdit = () => {
-    navigate(`/materials/${id}/edit`);
-  };
-
   const handleDelete = async () => {
-    if (!id || !window.confirm('정말로 이 게시글을 삭제하시겠습니까?')) return;
+    if (!window.confirm('정말로 이 게시글을 삭제하시겠습니까?')) {
+      return;
+    }
 
     try {
-      // 첨부 파일이 있는 경우 Storage에서 삭제
-      if (post?.fileUrl) {
-        const fileRef = ref(storage, post.fileUrl);
-        await deleteObject(fileRef);
+      if (!id) {
+        setError('게시글 ID가 유효하지 않습니다.');
+        return;
       }
 
-      await deleteDoc(doc(db, 'teaching_materials', id));
+      await deleteDoc(doc(db, 'materials', id));
       navigate('/materials');
-    } catch (error) {
-      console.error('게시글 삭제 중 오류:', error);
-      setError('게시글 삭제에 실패했습니다.');
+    } catch (err) {
+      setError('게시글 삭제 중 오류가 발생했습니다.');
+      console.error('Error deleting post:', err);
+    }
+  };
+
+  const handleDownload = () => {
+    if (post?.fileUrl) {
+      window.open(post.fileUrl, '_blank');
     }
   };
 
@@ -193,72 +207,64 @@ const MaterialDetail = () => {
     }
   };
 
-  if (error) {
+  if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Alert severity="error">{error}</Alert>
-      </Container>
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+        <CircularProgress />
+      </Box>
     );
+  }
+
+  if (error) {
+    return <Alert severity="error">{error}</Alert>;
   }
 
   if (!post) {
-    return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Typography>로딩 중...</Typography>
-      </Container>
-    );
+    return <Alert severity="info">게시글을 찾을 수 없습니다.</Alert>;
   }
 
-  const isAuthor = currentUser && currentUser.email === post.authorId;
+  const isAuthor = currentUser && currentUser.email === post.author.email;
 
   return (
     <PageTransition>
-      <Container maxWidth="lg" sx={{ py: 6 }}>
-        <Paper elevation={0} sx={{ p: 5, borderRadius: '12px', border: '1px solid #e0e0e0' }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 4 }}>
-            <Box>
-              <Typography variant="h5" component="h1" gutterBottom>
-                {post.title}
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 2, color: 'text.secondary' }}>
-                <Typography variant="body2">작성자: {maskUserId(post.authorId)}</Typography>
-                <Divider orientation="vertical" flexItem />
-                <Typography variant="body2">
-                  작성일: {new Date(post.createdAt).toLocaleDateString()}
-                </Typography>
-                <Divider orientation="vertical" flexItem />
-                <Typography variant="body2">조회수: {post.views}</Typography>
-              </Box>
-            </Box>
-            {isAuthor && (
-              <Box>
-                <IconButton onClick={handleEdit}>
-                  <EditIcon />
-                </IconButton>
-                <IconButton onClick={handleDelete}>
-                  <DeleteIcon />
-                </IconButton>
-              </Box>
-            )}
+      <Container maxWidth="md">
+        <Paper elevation={3} sx={{ p: 3, mt: 3 }}>
+          <Typography variant="h4" gutterBottom>
+            {post.title}
+          </Typography>
+          
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="body2" color="text.secondary">
+              작성자: {post.author.email}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              작성일: {new Date(post.createdAt.toDate()).toLocaleString()}
+            </Typography>
           </Box>
 
-          <Divider sx={{ my: 3 }} />
-
-          <Typography sx={{ whiteSpace: 'pre-wrap', mb: 4 }}>
+          <Typography variant="body1" paragraph>
             {post.content}
           </Typography>
 
           {post.fileUrl && (
-            <Box sx={{ mt: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="body2">첨부파일: {post.fileName}</Typography>
-                <IconButton
-                  size="small"
-                  onClick={() => window.open(post.fileUrl, '_blank')}
-                >
-                  <DownloadIcon />
-                </IconButton>
-              </Box>
+            <Button
+              variant="contained"
+              startIcon={<CloudDownloadIcon />}
+              onClick={handleDownload}
+              sx={{ mt: 2 }}
+            >
+              {post.fileName || '파일 다운로드'}
+            </Button>
+          )}
+
+          {isAuthor && (
+            <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
+              <Button variant="contained" color="primary" onClick={() => navigate(`/materials/${id}/edit`)}>
+                수정
+              </Button>
+              <Button variant="contained" color="error" onClick={handleDelete}>
+                삭제
+              </Button>
             </Box>
           )}
 
