@@ -67,7 +67,7 @@ const JobPostDetail = () => {
       }
 
       try {
-        const docRef = doc(db, 'jobs', id);
+        const docRef = doc(db, 'job_posts', id);
         const docSnap = await getDoc(docRef);
         
         if (docSnap.exists()) {
@@ -126,7 +126,7 @@ const JobPostDetail = () => {
     }
 
     try {
-      await deleteDoc(doc(db, 'jobs', id));
+      await deleteDoc(doc(db, 'job_posts', id));
       navigate('/jobs');
     } catch (error) {
       console.error('Error deleting post:', error);

@@ -67,7 +67,7 @@ const BoardDetail = () => {
       }
 
       try {
-        const docRef = doc(db, 'board', id);
+        const docRef = doc(db, 'board_posts', id);
         const docSnap = await getDoc(docRef);
         
         if (docSnap.exists()) {
