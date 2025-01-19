@@ -69,7 +69,7 @@ const BoardForm = () => {
       let fileName = '';
 
       if (file) {
-        const fileRef = ref(storage, `board_files/${Date.now()}_${file.name}`);
+        const fileRef = ref(storage, `gs://tourism-education.firebasestorage.app/board_files/${Date.now()}_${file.name}`);
         await uploadBytes(fileRef, file);
         fileUrl = await getDownloadURL(fileRef);
         fileName = file.name;

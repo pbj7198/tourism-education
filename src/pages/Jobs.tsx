@@ -23,6 +23,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
 import { collection, query, orderBy, onSnapshot, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -42,6 +43,8 @@ interface JobPost {
   createdAt: string | Timestamp;
   views: number;
   isNotice?: boolean; // 공지사항 여부
+  fileUrl?: string;
+  fileName?: string;
 }
 
 const Jobs = () => {
@@ -149,14 +152,22 @@ const Jobs = () => {
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       {post.isNotice && (
-                        <Chip
-                          label="공지"
-                          size="small"
-                          color="primary"
-                          sx={{ minWidth: 60 }}
-                        />
+                        <Typography
+                          component="span"
+                          sx={{
+                            color: 'error.main',
+                            fontWeight: 600,
+                            fontSize: '0.875rem',
+                            mr: 1
+                          }}
+                        >
+                          [공지]
+                        </Typography>
                       )}
                       {post.title}
+                      {post.fileUrl && (
+                        <AttachFileIcon fontSize="small" color="action" />
+                      )}
                     </Box>
                   </TableCell>
                   <TableCell align="center">{maskUserId(post.author?.email || null)}</TableCell>
