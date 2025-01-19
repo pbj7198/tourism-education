@@ -4,34 +4,31 @@ import {
   Container,
   Typography,
   Paper,
-  Button,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  Button,
   Box,
   Alert,
-  IconButton,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import DownloadIcon from '@mui/icons-material/Download';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase';
-import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
-import { maskUserId } from '../utils/maskUserId';
+import { useAuth } from '../contexts/AuthContext';
 
 interface MaterialPost {
   id: string;
   title: string;
+  content: string;
   author: {
-    uid: string;
-    email: string;
-    displayName: string | null;
+    id: string;
+    email: string | null;
+    name: string;
   };
-  createdAt: any;
+  createdAt: string | Timestamp;
   views: number;
   fileUrl?: string;
   fileName?: string;
@@ -49,104 +46,93 @@ const TeachingMaterials = () => {
       orderBy('createdAt', 'desc')
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const postsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as MaterialPost[];
-      setPosts(postsData);
-    }, (error) => {
-      console.error('게시글 로드 중 오류:', error);
-      setError('게시글을 불러오는데 실패했습니다.');
-    });
+    const unsubscribe = onSnapshot(q, 
+      (snapshot) => {
+        const newPosts = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as MaterialPost[];
+        setPosts(newPosts);
+      },
+      (error) => {
+        console.error('Error fetching posts:', error);
+        setError('게시글을 불러오는데 실패했습니다.');
+      }
+    );
 
     return () => unsubscribe();
   }, []);
 
-  const handleCreatePost = () => {
-    navigate('/materials/new');
+  const formatDate = (date: string | Timestamp) => {
+    if (date instanceof Timestamp) {
+      return date.toDate().toLocaleDateString('ko-KR');
+    }
+    return new Date(date).toLocaleDateString('ko-KR');
   };
-
-  const handleRowClick = (postId: string) => {
-    navigate(`/materials/${postId}`);
-  };
-
-  if (error) {
-    return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Alert severity="error">{error}</Alert>
-      </Container>
-    );
-  }
 
   return (
     <PageTransition>
       <Container maxWidth="lg" sx={{ py: 6 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-          <Typography variant="h4" component="h1">
-            관광교사 임용자료
-          </Typography>
-          {currentUser && (
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={handleCreatePost}
-            >
-              자료 등록
-            </Button>
-          )}
-        </Box>
+        <Paper elevation={0} sx={{ p: 4, borderRadius: '12px', border: '1px solid #e0e0e0' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+            <Typography variant="h5" component="h1">
+              관광교사 임용자료
+            </Typography>
+            {currentUser && (
+              <Button
+                variant="contained"
+                onClick={() => navigate('/materials/new')}
+              >
+                글쓰기
+              </Button>
+            )}
+          </Box>
 
-        <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #e0e0e0' }}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>제목</TableCell>
-                <TableCell align="center" width={150}>작성자</TableCell>
-                <TableCell align="center" width={200}>작성일</TableCell>
-                <TableCell align="center" width={100}>조회수</TableCell>
-                <TableCell align="center" width={100}>첨부파일</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {posts.map((post) => (
-                <TableRow
-                  key={post.id}
-                  hover
-                  onClick={() => handleRowClick(post.id)}
-                  sx={{ cursor: 'pointer' }}
-                >
-                  <TableCell>{post.title}</TableCell>
-                  <TableCell align="center">{maskUserId(post.author.email)}</TableCell>
-                  <TableCell align="center">
-                    {new Date(post.createdAt.toDate()).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell align="center">{post.views || 0}</TableCell>
-                  <TableCell align="center">
-                    {post.fileUrl && (
-                      <IconButton
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.open(post.fileUrl, '_blank');
-                        }}
-                      >
-                        <DownloadIcon />
-                      </IconButton>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {posts.length === 0 && (
+          {error && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {error}
+            </Alert>
+          )}
+
+          <TableContainer>
+            <Table>
+              <TableHead>
                 <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
-                    등록된 자료가 없습니다.
-                  </TableCell>
+                  <TableCell>제목</TableCell>
+                  <TableCell>작성자</TableCell>
+                  <TableCell>작성일</TableCell>
+                  <TableCell>조회수</TableCell>
+                  <TableCell>첨부파일</TableCell>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableHead>
+              <TableBody>
+                {posts.map((post) => (
+                  <TableRow
+                    key={post.id}
+                    hover
+                    onClick={() => navigate(`/materials/${post.id}`)}
+                    sx={{ cursor: 'pointer' }}
+                  >
+                    <TableCell>{post.title}</TableCell>
+                    <TableCell>{post.author.name}</TableCell>
+                    <TableCell>{formatDate(post.createdAt)}</TableCell>
+                    <TableCell>{post.views}</TableCell>
+                    <TableCell>
+                      {post.fileName ? '있음' : '없음'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {posts.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center">
+                      등록된 게시글이 없습니다.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
       </Container>
     </PageTransition>
   );
