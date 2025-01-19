@@ -8,10 +8,10 @@ import {
   Button,
   Box,
   Alert,
-  FormControlLabel,
-  Checkbox,
   IconButton,
   CircularProgress,
+  FormControlLabel,
+  Checkbox
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -20,22 +20,30 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
+import RichTextEditor from '../components/RichTextEditor';
+import type { Editor } from '@tinymce/tinymce-react';
 
 const JobPostForm = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+  const editorRef = useRef<Editor>(null);
+
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isNotice, setIsNotice] = useState(false);
   const [file, setFile] = useState<File | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!currentUser) {
-    navigate('/jobs');
-    return null;
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Alert severity="error">
+          로그인이 필요한 서비스입니다.
+        </Alert>
+      </Container>
+    );
   }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,11 +61,7 @@ const JobPostForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser) {
-      setError('로그인이 필요합니다.');
-      return;
-    }
-
+    
     if (!title.trim() || !content.trim()) {
       setError('제목과 내용을 모두 입력해주세요.');
       return;
@@ -65,20 +69,21 @@ const JobPostForm = () => {
 
     try {
       setIsSubmitting(true);
-      
+      setError('');
+
       let fileUrl = '';
       let fileName = '';
 
       if (file) {
-        const fileRef = ref(storage, `gs://tourism-education.firebasestorage.app/job_files/${Date.now()}_${file.name}`);
+        const fileRef = ref(storage, `job_posts/${Date.now()}_${file.name}`);
         await uploadBytes(fileRef, file);
         fileUrl = await getDownloadURL(fileRef);
         fileName = file.name;
       }
 
-      const postData = {
-        title: title.trim(),
-        content: content.trim(),
+      const docRef = await addDoc(collection(db, 'job_posts'), {
+        title,
+        content,
         author: {
           id: currentUser.id,
           email: currentUser.email,
@@ -86,16 +91,15 @@ const JobPostForm = () => {
         },
         createdAt: serverTimestamp(),
         views: 0,
-        isNotice: isNotice && currentUser.role === 'admin',
+        isNotice,
         fileUrl,
         fileName
-      };
+      });
 
-      const docRef = await addDoc(collection(db, 'job_posts'), postData);
       navigate(`/jobs/${docRef.id}`);
     } catch (error) {
-      console.error('Error creating post:', error);
-      setError('게시글 등록에 실패했습니다.');
+      console.error('게시글 작성 중 오류:', error);
+      setError('게시글 작성에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setIsSubmitting(false);
     }
@@ -110,42 +114,40 @@ const JobPostForm = () => {
           </Typography>
 
           {error && (
-            <Alert severity="error" sx={{ mb: 4 }}>
+            <Alert severity="error" sx={{ mb: 3 }}>
               {error}
             </Alert>
           )}
 
-          <Box component="form" onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit}>
             <TextField
               fullWidth
               label="제목"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              sx={{ mb: 3 }}
+              margin="normal"
+              required
             />
 
-            {currentUser?.role === 'admin' && (
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={isNotice}
-                    onChange={(e) => setIsNotice(e.target.checked)}
-                  />
-                }
-                label="공지사항으로 등록"
-                sx={{ mb: 2 }}
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={isNotice}
+                  onChange={(e) => setIsNotice(e.target.checked)}
+                />
+              }
+              label="공지로 등록"
+              sx={{ my: 1 }}
+            />
+
+            <Box sx={{ mt: 3, mb: 3 }}>
+              <RichTextEditor
+                ref={editorRef}
+                value={content}
+                onChange={setContent}
+                placeholder="내용을 입력하세요..."
               />
-            )}
-
-            <TextField
-              fullWidth
-              multiline
-              rows={15}
-              label="내용"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              sx={{ mb: 3 }}
-            />
+            </Box>
 
             <Box sx={{ mt: 3, mb: 2 }}>
               <input
@@ -178,7 +180,7 @@ const JobPostForm = () => {
               )}
             </Box>
 
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
               <Button
                 variant="outlined"
                 onClick={() => navigate('/jobs')}
@@ -196,7 +198,7 @@ const JobPostForm = () => {
                 ) : '등록'}
               </Button>
             </Box>
-          </Box>
+          </form>
         </Paper>
       </Container>
     </PageTransition>

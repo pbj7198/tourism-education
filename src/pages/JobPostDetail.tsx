@@ -274,8 +274,8 @@ const JobPostDetail = () => {
           </Box>
 
           {/* 게시글 본문 */}
-          <Box sx={{ mb: 4, minHeight: '200px', whiteSpace: 'pre-wrap' }}>
-            {convertUrlsToLinks(post.content)}
+          <Box sx={{ mb: 4, minHeight: '200px' }}>
+            <div dangerouslySetInnerHTML={{ __html: post.content }} />
           </Box>
 
           {/* 첨부파일 */}
