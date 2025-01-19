@@ -68,15 +68,34 @@ const MaterialForm = () => {
         try {
           const timestamp = Date.now();
           const fileExtension = file.name.split('.').pop();
-          const storageRef = ref(storage, `materials/${timestamp}_${Math.random().toString(36).substring(2)}.${fileExtension}`);
+          const uniqueFileName = `${timestamp}_${Math.random().toString(36).substring(2)}.${fileExtension}`;
+          const storageRef = ref(storage, uniqueFileName);
           
           // 메타데이터 설정
           const metadata = {
-            contentType: file.type
+            contentType: file.type,
+            customMetadata: {
+              originalName: file.name
+            }
           };
 
           // 파일 업로드
-          await uploadBytesResumable(storageRef, file, metadata);
+          const uploadTask = uploadBytesResumable(storageRef, file, metadata);
+          
+          // 업로드 진행 상황 모니터링
+          uploadTask.on('state_changed',
+            (snapshot) => {
+              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+              setUploadProgress(progress);
+            },
+            (error) => {
+              console.error('파일 업로드 오류:', error);
+              throw new Error('파일 업로드에 실패했습니다. 다시 시도해주세요.');
+            }
+          );
+
+          // 업로드 완료 대기
+          await uploadTask;
           
           // 다운로드 URL 가져오기
           fileUrl = await getDownloadURL(storageRef);
