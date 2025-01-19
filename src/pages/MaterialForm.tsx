@@ -65,37 +65,26 @@ const MaterialForm = () => {
       let fileName = '';
 
       if (file) {
-        const storageRef = ref(storage, `materials/${Date.now()}_${file.name}`);
-        
-        // 메타데이터 설정
-        const metadata = {
-          contentType: file.type,
-          customMetadata: {
-            originalName: file.name
-          }
-        };
+        try {
+          const timestamp = Date.now();
+          const fileExtension = file.name.split('.').pop();
+          const storageRef = ref(storage, `materials/${timestamp}_${Math.random().toString(36).substring(2)}.${fileExtension}`);
+          
+          // 메타데이터 설정
+          const metadata = {
+            contentType: file.type
+          };
 
-        // 파일 업로드
-        const uploadTask = uploadBytesResumable(storageRef, file, metadata);
-        
-        // 업로드 진행 상황 모니터링
-        uploadTask.on('state_changed',
-          (snapshot) => {
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            console.log('Upload is ' + progress + '% done');
-          },
-          (error) => {
-            console.error('Upload error:', error);
-            throw new Error('파일 업로드에 실패했습니다.');
-          }
-        );
-
-        // 업로드 완료 대기
-        await uploadTask;
-        
-        // 다운로드 URL 가져오기
-        fileUrl = await getDownloadURL(storageRef);
-        fileName = file.name;
+          // 파일 업로드
+          await uploadBytesResumable(storageRef, file, metadata);
+          
+          // 다운로드 URL 가져오기
+          fileUrl = await getDownloadURL(storageRef);
+          fileName = file.name;
+        } catch (uploadError) {
+          console.error('파일 업로드 오류:', uploadError);
+          throw new Error('파일 업로드에 실패했습니다. 다시 시도해주세요.');
+        }
       }
 
       const user = auth.currentUser as User;
@@ -117,6 +106,7 @@ const MaterialForm = () => {
     } catch (err) {
       console.error('Error:', err);
       setError(err instanceof Error ? err.message : '게시글 작성에 실패했습니다.');
+    } finally {
       setIsSubmitting(false);
     }
   };
