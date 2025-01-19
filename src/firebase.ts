@@ -16,6 +16,11 @@ const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-export const storage = getStorage(app, 'gs://tourism-education.appspot.com');
+export const storage = getStorage(app);
+
+// Storage 설정
+const storageInstance = getStorage();
+storageInstance.maxUploadRetryTime = 30000;
+storageInstance.maxOperationRetryTime = 30000;
 
 export default app; 

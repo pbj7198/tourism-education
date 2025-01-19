@@ -63,8 +63,19 @@ const MaterialForm = () => {
       // 파일이 있는 경우 업로드
       if (file) {
         try {
-          const fileRef = ref(storage, `materials/${Date.now()}_${file.name}`);
-          await uploadBytes(fileRef, file);
+          const timestamp = Date.now();
+          const fileExtension = file.name.split('.').pop();
+          const uniqueFileName = `materials/${timestamp}_${Math.random().toString(36).substring(2)}.${fileExtension}`;
+          
+          const fileRef = ref(storage, uniqueFileName);
+          const metadata = {
+            contentType: file.type,
+            customMetadata: {
+              originalName: file.name
+            }
+          };
+
+          await uploadBytes(fileRef, file, metadata);
           fileUrl = await getDownloadURL(fileRef);
           fileName = file.name;
         } catch (uploadError: any) {
