@@ -19,10 +19,15 @@ interface JobPost {
   id: string;
   title: string;
   content: string;
-  author: string;
-  authorId: string;
+  author: {
+    id: string;
+    email: string | null;
+    name: string;
+  };
   createdAt: string;
   views: number;
+  fileUrl?: string;
+  fileName?: string;
 }
 
 const JobPostEdit = () => {
@@ -62,7 +67,7 @@ const JobPostEdit = () => {
   }, [id]);
 
   useEffect(() => {
-    if (post && (!currentUser || currentUser.id !== post.authorId)) {
+    if (post && (!currentUser || (currentUser.email !== post.author.email && currentUser.role !== 'admin'))) {
       navigate(`/jobs/${id}`);
     }
   }, [post, currentUser, id, navigate]);
