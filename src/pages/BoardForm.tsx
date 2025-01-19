@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import {
   Container,
   Typography,
+  Paper,
   TextField,
   Button,
   Box,
-  Paper,
   Alert,
   IconButton,
-  CircularProgress,
+  CircularProgress
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -18,11 +18,14 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
+import RichTextEditor from '../components/RichTextEditor';
+import type { Editor } from '@tinymce/tinymce-react';
 
 const BoardForm = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const editorRef = useRef<Editor>(null);
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -69,7 +72,7 @@ const BoardForm = () => {
       let fileName = '';
 
       if (file) {
-        const fileRef = ref(storage, `gs://tourism-education.firebasestorage.app/board_files/${Date.now()}_${file.name}`);
+        const fileRef = ref(storage, `board_posts/${Date.now()}_${file.name}`);
         await uploadBytes(fileRef, file);
         fileUrl = await getDownloadURL(fileRef);
         fileName = file.name;
@@ -88,7 +91,8 @@ const BoardForm = () => {
         fileUrl,
         fileName
       });
-      navigate('/board');
+
+      navigate(`/board/${docRef.id}`);
     } catch (error) {
       console.error('게시글 작성 중 오류:', error);
       setError('게시글 작성에 실패했습니다. 다시 시도해주세요.');
@@ -100,9 +104,9 @@ const BoardForm = () => {
   return (
     <PageTransition>
       <Container maxWidth="lg" sx={{ py: 6 }}>
-        <Paper elevation={0} sx={{ p: 5, borderRadius: '12px', border: '1px solid #e0e0e0' }}>
-          <Typography variant="h5" component="h1" gutterBottom sx={{ mb: 4, fontWeight: 600 }}>
-            새 글 작성
+        <Paper elevation={0} sx={{ p: 4, borderRadius: '12px', border: '1px solid #e0e0e0' }}>
+          <Typography variant="h5" component="h1" gutterBottom sx={{ mb: 4 }}>
+            게시글 작성
           </Typography>
 
           {error && (
@@ -113,24 +117,22 @@ const BoardForm = () => {
 
           <form onSubmit={handleSubmit}>
             <TextField
+              fullWidth
               label="제목"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              fullWidth
+              margin="normal"
               required
-              sx={{ mb: 3 }}
             />
 
-            <TextField
-              label="내용"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              multiline
-              rows={15}
-              fullWidth
-              required
-              sx={{ mb: 3 }}
-            />
+            <Box sx={{ mt: 3, mb: 3 }}>
+              <RichTextEditor
+                ref={editorRef}
+                value={content}
+                onChange={setContent}
+                placeholder="내용을 입력하세요..."
+              />
+            </Box>
 
             <Box sx={{ mt: 3, mb: 2 }}>
               <input
@@ -163,7 +165,7 @@ const BoardForm = () => {
               )}
             </Box>
 
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
               <Button
                 variant="outlined"
                 onClick={() => navigate('/board')}
@@ -178,7 +180,7 @@ const BoardForm = () => {
               >
                 {isSubmitting ? (
                   <CircularProgress size={24} />
-                ) : '저장'}
+                ) : '등록'}
               </Button>
             </Box>
           </form>
