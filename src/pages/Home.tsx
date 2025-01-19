@@ -24,11 +24,12 @@ const Home = () => {
             }}
           >
             <img
-              src="/four_members.jpeg"
+              src="/two_members.jpeg"
               alt="한국관광교육연구회 회원"
               style={{
                 maxWidth: '100%',
-                height: 'auto'
+                height: 'auto',
+                backgroundColor: '#fff'
               }}
             />
           </Box>
