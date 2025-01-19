@@ -14,7 +14,7 @@ import {
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { collection, addDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
@@ -69,13 +69,29 @@ const MaterialForm = () => {
           
           const fileRef = ref(storage, uniqueFileName);
           const metadata = {
-            contentType: file.type,
-            customMetadata: {
-              originalName: file.name
-            }
+            contentType: file.type
           };
 
-          await uploadBytes(fileRef, file, metadata);
+          // uploadBytesResumable 사용
+          const uploadTask = uploadBytesResumable(fileRef, file, metadata);
+
+          // 업로드 진행 상황 모니터링
+          uploadTask.on('state_changed',
+            (snapshot) => {
+              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+              setUploadProgress(progress);
+            },
+            (error) => {
+              console.error('파일 업로드 중 오류:', error);
+              setError(`파일 업로드 실패: ${error.message}`);
+              setIsSubmitting(false);
+            }
+          );
+
+          // 업로드 완료 대기
+          await uploadTask;
+          
+          // 다운로드 URL 가져오기
           fileUrl = await getDownloadURL(fileRef);
           fileName = file.name;
         } catch (uploadError: any) {

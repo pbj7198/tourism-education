@@ -16,11 +16,12 @@ const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-export const storage = getStorage(app);
 
 // Storage 설정
-const storageInstance = getStorage();
-storageInstance.maxUploadRetryTime = 30000;
-storageInstance.maxOperationRetryTime = 30000;
+const storage = getStorage(app);
+storage.maxOperationRetryTime = 10000;
+storage.maxUploadRetryTime = 10000;
+
+export { storage };
 
 export default app; 
