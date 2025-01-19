@@ -104,13 +104,24 @@ const JobPostDetail = () => {
   };
 
   const handleDelete = async () => {
-    if (!id || !window.confirm('정말로 이 게시글을 삭제하시겠습니까?')) return;
+    if (!id || !post || !currentUser) {
+      return;
+    }
+
+    // 작성자이거나 관리자인 경우에만 삭제 가능
+    if (currentUser.id !== post.author.id && currentUser.role !== 'admin') {
+      return;
+    }
+
+    if (!window.confirm('정말로 이 게시글을 삭제하시겠습니까?')) {
+      return;
+    }
 
     try {
-      await deleteDoc(doc(db, 'job_posts', id));
+      await deleteDoc(doc(db, 'jobs', id));
       navigate('/jobs');
     } catch (error) {
-      console.error('게시글 삭제 중 오류:', error);
+      console.error('Error deleting post:', error);
       setError('게시글 삭제에 실패했습니다.');
     }
   };
@@ -203,39 +214,44 @@ const JobPostDetail = () => {
   return (
     <PageTransition>
       <Container maxWidth="lg" sx={{ py: 6 }}>
-        <Paper elevation={0} sx={{ p: 5, borderRadius: '12px', border: '1px solid #e0e0e0' }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 4 }}>
-            <Box>
-              <Typography variant="h5" component="h1" gutterBottom>
-                {post.title}
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 2, color: 'text.secondary' }}>
-                <Typography variant="body2">작성자: {maskUserId(post.authorId)}</Typography>
-                <Divider orientation="vertical" flexItem />
-                <Typography variant="body2">
-                  작성일: {new Date(post.createdAt).toLocaleDateString()}
-                </Typography>
-                <Divider orientation="vertical" flexItem />
-                <Typography variant="body2">조회수: {post.views}</Typography>
-              </Box>
+        <Paper elevation={0} sx={{ p: 4, borderRadius: '12px', border: '1px solid #e0e0e0' }}>
+          {/* 게시글 헤더 */}
+          <Box sx={{ mb: 4, borderBottom: '1px solid #e0e0e0', pb: 3 }}>
+            <Typography variant="h5" component="h1" gutterBottom sx={{ mb: 2 }}>
+              {post.title}
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 2, color: '#666', fontSize: '0.9rem' }}>
+              <Box>작성자: {post.author.name}</Box>
+              <Divider orientation="vertical" flexItem />
+              <Box>작성일: {formatDate(post.createdAt)}</Box>
+              <Divider orientation="vertical" flexItem />
+              <Box>조회수: {post.views}</Box>
             </Box>
-            {isAuthor && (
-              <Box>
-                <IconButton onClick={handleEdit}>
-                  <EditIcon />
-                </IconButton>
-                <IconButton onClick={handleDelete}>
-                  <DeleteIcon />
-                </IconButton>
-              </Box>
-            )}
           </Box>
 
-          <Divider sx={{ my: 3 }} />
-
-          <Typography sx={{ whiteSpace: 'pre-wrap', mb: 4 }}>
+          {/* 게시글 본문 */}
+          <Box sx={{ mb: 4, minHeight: '200px', whiteSpace: 'pre-wrap' }}>
             {post.content}
-          </Typography>
+          </Box>
+
+          {/* 작성자 또는 관리자 액션 버튼 */}
+          {currentUser && (currentUser.id === post.author.id || currentUser.role === 'admin') && (
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', pt: 3, borderTop: '1px solid #e0e0e0' }}>
+              <Button
+                variant="outlined"
+                onClick={() => navigate(`/jobs/${id}/edit`)}
+              >
+                수정
+              </Button>
+              <Button
+                variant="outlined"
+                color="error"
+                onClick={handleDelete}
+              >
+                삭제
+              </Button>
+            </Box>
+          )}
 
           {/* 댓글 섹션 */}
           <Box sx={{ mt: 6, pt: 4, borderTop: '1px solid #e0e0e0' }}>
