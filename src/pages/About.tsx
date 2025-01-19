@@ -56,8 +56,8 @@ const About = () => {
               display: 'flex',
               justifyContent: 'center',
               alignItems: 'center',
-              width: '100%',
-              mb: -13
+              width: '60%',
+              mb: 0
             }}>
               <img
                 src={introImage}
