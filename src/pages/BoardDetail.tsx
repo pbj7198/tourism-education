@@ -144,8 +144,8 @@ const BoardDetail = () => {
       setIsSubmitting(true);
       const commentData = {
         content: newComment,
-        author: currentUser.displayName || currentUser.email?.split('@')[0] || '익명',
-        authorId: currentUser.email,
+        author: currentUser.email?.split('@')[0] || '익명',
+        authorId: currentUser.email || '',
         createdAt: new Date().toISOString()
       };
 
