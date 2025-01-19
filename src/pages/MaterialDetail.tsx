@@ -279,7 +279,11 @@ const MaterialDetail = () => {
 
           {/* 게시글 본문 */}
           <Box sx={{ mb: 4, minHeight: '200px', whiteSpace: 'pre-wrap' }}>
-            {post.content}
+            <div 
+              className="ql-editor" 
+              dangerouslySetInnerHTML={{ __html: post.content }} 
+              style={{ padding: 0 }}
+            />
           </Box>
 
           {/* 첨부파일 */}
