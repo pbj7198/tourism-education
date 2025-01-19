@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -8,17 +8,25 @@ import {
   Box,
   Paper,
   Alert,
+  IconButton,
+  CircularProgress,
 } from '@mui/material';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { collection, addDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
 
 const BoardForm = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -32,6 +40,19 @@ const BoardForm = () => {
     );
   }
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const selectedFile = e.target.files[0];
+      // 파일 크기 제한 (50MB)
+      if (selectedFile.size > 50 * 1024 * 1024) {
+        setError('파일 크기는 50MB를 초과할 수 없습니다.');
+        return;
+      }
+      setFile(selectedFile);
+      setError('');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -44,12 +65,24 @@ const BoardForm = () => {
       setIsSubmitting(true);
       setError('');
 
+      let fileUrl = '';
+      let fileName = '';
+
+      if (file) {
+        const fileRef = ref(storage, `board_files/${Date.now()}_${file.name}`);
+        await uploadBytes(fileRef, file);
+        fileUrl = await getDownloadURL(fileRef);
+        fileName = file.name;
+      }
+
       const docRef = await addDoc(collection(db, 'board_posts'), {
         title,
         content,
         authorId: currentUser.email,
         createdAt: new Date().toISOString(),
-        views: 0
+        views: 0,
+        fileUrl,
+        fileName
       });
       navigate('/board');
     } catch (error) {
@@ -95,6 +128,37 @@ const BoardForm = () => {
               sx={{ mb: 3 }}
             />
 
+            <Box sx={{ mt: 3, mb: 2 }}>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileSelect}
+                style={{ display: 'none' }}
+              />
+              <Button
+                variant="outlined"
+                startIcon={<CloudUploadIcon />}
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isSubmitting}
+              >
+                파일 첨부
+              </Button>
+              {file && (
+                <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                  <Typography variant="body2" sx={{ mr: 1 }}>
+                    {file.name} ({(file.size / 1024 / 1024).toFixed(2)}MB)
+                  </Typography>
+                  <IconButton
+                    size="small"
+                    onClick={() => setFile(null)}
+                    disabled={isSubmitting}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </Box>
+              )}
+            </Box>
+
             <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
               <Button
                 variant="outlined"
@@ -108,7 +172,9 @@ const BoardForm = () => {
                 variant="contained"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? '저장 중...' : '저장'}
+                {isSubmitting ? (
+                  <CircularProgress size={24} />
+                ) : '저장'}
               </Button>
             </Box>
           </form>

@@ -36,7 +36,7 @@ const Home = () => {
             }}
           >
             <img
-              src="/two_members.jpeg"
+              src="/four_members.jpeg"
               alt="한국관광교육연구회 회원"
               style={{
                 maxWidth: '60%',

@@ -23,6 +23,7 @@ import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
 import { maskUserId } from '../utils/maskUserId';
 import { Timestamp } from 'firebase/firestore';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 
 interface BoardPost {
   id: string;
@@ -35,6 +36,8 @@ interface BoardPost {
   };
   createdAt: string | Timestamp;
   views: number;
+  fileUrl?: string;
+  fileName?: string;
 }
 
 interface Comment {
@@ -250,6 +253,27 @@ const BoardDetail = () => {
           <Box sx={{ mb: 4, minHeight: '200px', whiteSpace: 'pre-wrap' }}>
             {post.content}
           </Box>
+
+          {/* 첨부파일 */}
+          {post.fileUrl && post.fileName && (
+            <Box sx={{ mb: 4, pt: 3, borderTop: '1px solid #e0e0e0' }}>
+              <Button
+                startIcon={<CloudDownloadIcon />}
+                onClick={() => {
+                  if (post.fileUrl && post.fileName) {
+                    const link = document.createElement('a');
+                    link.href = post.fileUrl;
+                    link.download = post.fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }
+                }}
+              >
+                {post.fileName}
+              </Button>
+            </Box>
+          )}
 
           {/* 작성자 또는 관리자 액션 버튼 */}
           {currentUser && (currentUser.email === author.email || currentUser.role === 'admin') && (

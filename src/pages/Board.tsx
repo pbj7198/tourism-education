@@ -22,7 +22,8 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { collection, query, orderBy, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
+import { collection, query, orderBy, getDocs, deleteDoc, doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
@@ -36,6 +37,8 @@ interface BoardPost {
   authorId: string;
   createdAt: string;
   views: number;
+  fileUrl?: string;
+  fileName?: string;
 }
 
 const Board = () => {
@@ -47,25 +50,20 @@ const Board = () => {
   const [selectedPost, setSelectedPost] = useState<BoardPost | null>(null);
 
   useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        const q = query(
-          collection(db, 'board_posts'),
-          orderBy('createdAt', 'desc')
-        );
-        const querySnapshot = await getDocs(q);
-        const postsData = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as BoardPost[];
-        setPosts(postsData);
-      } catch (error) {
-        console.error('게시글 로드 중 오류:', error);
-        setError('게시글을 불러오는데 실패했습니다.');
-      }
-    };
+    const q = query(collection(db, 'board_posts'), orderBy('createdAt', 'desc'));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const postsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as BoardPost[];
+      setPosts(postsData);
+    }, (error) => {
+      console.error('게시글 로드 중 오류:', error);
+      setError('게시글을 불러오는데 실패했습니다.');
+    });
 
-    fetchPosts();
+    return () => unsubscribe();
   }, []);
 
   const handleEdit = (post: BoardPost) => {
@@ -84,6 +82,11 @@ const Board = () => {
       console.error('Error deleting post:', error);
       setError('게시글 삭제에 실패했습니다.');
     }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ko-KR');
   };
 
   return (
@@ -137,9 +140,16 @@ const Board = () => {
                   onClick={() => navigate(`/board/${post.id}`)}
                   sx={{ cursor: 'pointer' }}
                 >
-                  <TableCell>{post.title}</TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {post.title}
+                      {post.fileUrl && (
+                        <AttachFileIcon fontSize="small" color="action" />
+                      )}
+                    </Box>
+                  </TableCell>
                   <TableCell align="center">{maskUserId(post.authorId)}</TableCell>
-                  <TableCell align="center">{new Date(post.createdAt).toLocaleDateString('ko-KR')}</TableCell>
+                  <TableCell align="center">{formatDate(post.createdAt)}</TableCell>
                   <TableCell align="center">{post.views || 0}</TableCell>
                   {currentUser?.role === 'admin' && (
                     <TableCell align="center">

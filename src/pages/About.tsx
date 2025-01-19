@@ -1,6 +1,6 @@
 import { Container, Box, Typography, Paper, Divider } from '@mui/material';
 import PageTransition from '../components/PageTransition';
-import introImage from '../../public/introduction.png';
+import introImage from '../../public/two_members.jpeg';
 
 const About = () => {
   return (
