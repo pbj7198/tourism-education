@@ -18,6 +18,7 @@ import { collection, query, orderBy, onSnapshot, Timestamp } from 'firebase/fire
 import { db } from '../firebase';
 import PageTransition from '../components/PageTransition';
 import { useAuth } from '../contexts/AuthContext';
+import { maskUserId } from '../utils/maskUserId';
 
 interface MaterialPost {
   id: string;
@@ -42,7 +43,7 @@ const TeachingMaterials = () => {
 
   useEffect(() => {
     const q = query(
-      collection(db, 'materials'),
+      collection(db, 'teaching_materials'),
       orderBy('createdAt', 'desc')
     );
 
@@ -114,7 +115,7 @@ const TeachingMaterials = () => {
                     sx={{ cursor: 'pointer' }}
                   >
                     <TableCell>{post.title}</TableCell>
-                    <TableCell>{post.author.name}</TableCell>
+                    <TableCell>{maskUserId(post.author.email)}</TableCell>
                     <TableCell>{formatDate(post.createdAt)}</TableCell>
                     <TableCell>{post.views}</TableCell>
                     <TableCell>

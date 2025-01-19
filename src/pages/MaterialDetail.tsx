@@ -73,7 +73,7 @@ const MaterialDetail = () => {
       }
 
       try {
-        const docRef = doc(db, 'materials', id);
+        const docRef = doc(db, 'teaching_materials', id);
         const docSnap = await getDoc(docRef);
         
         if (docSnap.exists()) {
@@ -83,12 +83,15 @@ const MaterialDetail = () => {
           });
           
           setPost({ id: docSnap.id, ...docSnap.data() } as MaterialPost);
+          setLoading(false);
         } else {
           setError('게시글을 찾을 수 없습니다.');
+          setLoading(false);
         }
       } catch (error) {
         console.error('Error fetching post:', error);
         setError('게시글을 불러오는데 실패했습니다.');
+        setLoading(false);
       }
     };
 
@@ -129,7 +132,14 @@ const MaterialDetail = () => {
     }
 
     try {
-      await deleteDoc(doc(db, 'materials', id));
+      await deleteDoc(doc(db, 'teaching_materials', id));
+      
+      // 첨부 파일이 있는 경우 Storage에서도 삭제
+      if (post.fileUrl) {
+        const fileRef = ref(storage, post.fileUrl);
+        await deleteObject(fileRef);
+      }
+      
       navigate('/materials');
     } catch (error) {
       console.error('Error deleting post:', error);
@@ -259,7 +269,7 @@ const MaterialDetail = () => {
               {post.title}
             </Typography>
             <Box sx={{ display: 'flex', gap: 2, color: '#666', fontSize: '0.9rem' }}>
-              <Box>작성자: {post.author.name}</Box>
+              <Box>작성자: {maskUserId(post.author.email)}</Box>
               <Divider orientation="vertical" flexItem />
               <Box>작성일: {formatDate(post.createdAt)}</Box>
               <Divider orientation="vertical" flexItem />

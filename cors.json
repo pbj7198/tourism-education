@@ -1,8 +1,8 @@
 [
   {
-    "origin": ["*"],
-    "method": ["GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS"],
+    "origin": ["http://localhost:5175", "https://tourism-education.web.app"],
+    "method": ["GET", "POST", "PUT", "DELETE", "HEAD"],
     "maxAgeSeconds": 3600,
-    "responseHeader": ["Content-Type", "Content-Length", "Content-Range", "Content-Disposition"]
+    "responseHeader": ["Content-Type", "Authorization", "Content-Length", "User-Agent", "x-goog-resumable"]
   }
 ] 

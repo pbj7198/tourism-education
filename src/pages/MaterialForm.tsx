@@ -13,41 +13,28 @@ import {
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { collection, addDoc } from 'firebase/firestore';
-import { storage, db } from '../firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
-import { User } from '../types/user';
-
-interface MaterialPost {
-  title: string;
-  content: string;
-  author: {
-    id: string;
-    email: string | null;
-    name: string;
-  };
-  createdAt: string;
-  views: number;
-  fileUrl?: string;
-  fileName?: string;
-}
 
 const MaterialForm = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0]) {
-      const selectedFile = event.target.files[0];
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const selectedFile = e.target.files[0];
+      // 파일 크기 제한 (50MB)
       if (selectedFile.size > 50 * 1024 * 1024) {
         setError('파일 크기는 50MB를 초과할 수 없습니다.');
         return;
@@ -59,15 +46,7 @@ const MaterialForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser) {
-      setError('로그인이 필요합니다.');
-      return;
-    }
-
-    if (!title || !content) {
-      setError('제목과 내용을 모두 입력해주세요.');
-      return;
-    }
+    if (!title.trim() || !content.trim()) return;
 
     setIsSubmitting(true);
     setError('');
@@ -77,56 +56,32 @@ const MaterialForm = () => {
       let fileName = '';
 
       if (file) {
-        const timestamp = Date.now();
-        const fileExtension = file.name.split('.').pop();
-        const storageRef = ref(storage, `materials/${timestamp}_${Math.random().toString(36).substring(2)}.${fileExtension}`);
-        const uploadTask = uploadBytesResumable(storageRef, file);
-
-        await new Promise<void>((resolve, reject) => {
-          uploadTask.on(
-            'state_changed',
-            (snapshot) => {
-              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-              setUploadProgress(progress);
-            },
-            (error) => {
-              console.error('Upload error:', error);
-              reject(error);
-            },
-            async () => {
-              try {
-                fileUrl = await getDownloadURL(uploadTask.snapshot.ref);
-                fileName = file.name;
-                resolve();
-              } catch (error) {
-                reject(error);
-              }
-            }
-          );
-        });
+        const fileRef = ref(storage, `gs://tourism-education.firebasestorage.app/materials/${Date.now()}_${file.name}`);
+        await uploadBytes(fileRef, file);
+        fileUrl = await getDownloadURL(fileRef);
+        fileName = file.name;
       }
 
-      const post: MaterialPost = {
+      const docRef = await addDoc(collection(db, 'teaching_materials'), {
         title,
         content,
         author: {
-          id: currentUser.id,
-          email: currentUser.email || null,
-          name: currentUser.name
+          id: currentUser?.id || '',
+          email: currentUser?.email || '',
+          name: currentUser?.name || '익명',
         },
-        createdAt: new Date().toISOString(),
+        createdAt: serverTimestamp(),
         views: 0,
-        ...(fileUrl && { fileUrl, fileName })
-      };
+        fileUrl,
+        fileName,
+      });
 
-      const docRef = await addDoc(collection(db, 'materials'), post);
       navigate(`/materials/${docRef.id}`);
     } catch (error) {
-      console.error('Error creating post:', error);
-      setError('게시글 등록에 실패했습니다. 다시 시도해주세요.');
+      console.error('게시글 작성 중 오류:', error);
+      setError('게시글 작성에 실패했습니다.');
     } finally {
       setIsSubmitting(false);
-      setUploadProgress(0);
     }
   };
 
@@ -208,15 +163,23 @@ const MaterialForm = () => {
               )}
             </Box>
 
-            <Button
-              type="submit"
-              variant="contained"
-              fullWidth
-              disabled={isSubmitting}
-              sx={{ mt: 2 }}
-            >
-              {isSubmitting ? '등록 중...' : '등록하기'}
-            </Button>
+            <Box sx={{ mt: 4, display: 'flex', gap: 2 }}>
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={isSubmitting}
+                sx={{ minWidth: 120 }}
+              >
+                {isSubmitting ? <CircularProgress size={24} /> : '등록'}
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => navigate('/materials')}
+                disabled={isSubmitting}
+              >
+                취소
+              </Button>
+            </Box>
           </form>
         </Paper>
       </Container>

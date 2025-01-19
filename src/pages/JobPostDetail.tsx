@@ -117,7 +117,7 @@ const JobPostDetail = () => {
     }
 
     // 작성자이거나 관리자인 경우에만 삭제 가능
-    if (currentUser.email !== post.author.email && currentUser.role !== 'admin') {
+    if (currentUser.id !== post.author?.id && currentUser.role !== 'admin') {
       return;
     }
 
@@ -144,8 +144,8 @@ const JobPostDetail = () => {
       setIsSubmitting(true);
       const commentData = {
         content: newComment,
-        author: currentUser.displayName || currentUser.email?.split('@')[0] || '익명',
-        authorId: currentUser.email,
+        author: currentUser.email?.split('@')[0] || '익명',
+        authorId: currentUser.email || '',
         createdAt: new Date().toISOString()
       };
 
@@ -238,7 +238,7 @@ const JobPostDetail = () => {
               {post.title}
             </Typography>
             <Box sx={{ display: 'flex', gap: 2, color: '#666', fontSize: '0.9rem' }}>
-              <Box>작성자: {author.name || '익명'}</Box>
+              <Box>작성자: {maskUserId(post.author?.email || null)}</Box>
               <Divider orientation="vertical" flexItem />
               <Box>작성일: {formatDate(post.createdAt)}</Box>
               <Divider orientation="vertical" flexItem />

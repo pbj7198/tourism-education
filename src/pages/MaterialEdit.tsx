@@ -23,8 +23,11 @@ interface MaterialPost {
   id: string;
   title: string;
   content: string;
-  author: string;
-  authorId: string;
+  author: {
+    id: string;
+    email: string | null;
+    name: string;
+  };
   createdAt: string;
   views: number;
   fileUrl?: string;
@@ -70,7 +73,7 @@ const MaterialEdit = () => {
   }, [id]);
 
   useEffect(() => {
-    if (post && (!currentUser || currentUser.id !== post.authorId)) {
+    if (post && (!currentUser || currentUser.id !== post.author.id)) {
       navigate(`/materials/${id}`);
     }
   }, [post, currentUser, id, navigate]);
@@ -108,7 +111,7 @@ const MaterialEdit = () => {
         }
 
         // 새 파일 업로드
-        const fileRef = ref(storage, `materials/${Date.now()}_${file.name}`);
+        const fileRef = ref(storage, `gs://tourism-education.firebasestorage.app/materials/${Date.now()}_${file.name}`);
         await uploadBytes(fileRef, file);
         fileUrl = await getDownloadURL(fileRef);
         fileName = file.name;
@@ -150,33 +153,33 @@ const MaterialEdit = () => {
   return (
     <PageTransition>
       <Container maxWidth="lg" sx={{ py: 6 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          임용자료 수정
-        </Typography>
+        <Paper elevation={0} sx={{ p: 4, borderRadius: '12px', border: '1px solid #e0e0e0' }}>
+          <Typography variant="h5" component="h1" gutterBottom sx={{ mb: 4 }}>
+            임용자료 수정
+          </Typography>
 
-        <Paper elevation={0} sx={{ p: 4, mt: 4, borderRadius: '12px', border: '1px solid #e0e0e0' }}>
           <form onSubmit={handleSubmit}>
             <TextField
-              fullWidth
               label="제목"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              fullWidth
               margin="normal"
               required
             />
 
             <TextField
-              fullWidth
               label="내용"
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              multiline
-              rows={15}
+              fullWidth
               margin="normal"
               required
+              multiline
+              rows={15}
             />
 
-            <Box sx={{ mt: 3, mb: 3 }}>
+            <Box sx={{ mt: 3, mb: 2 }}>
               <input
                 type="file"
                 ref={fileInputRef}
@@ -187,6 +190,7 @@ const MaterialEdit = () => {
                 variant="outlined"
                 startIcon={<CloudUploadIcon />}
                 onClick={() => fileInputRef.current?.click()}
+                disabled={isSubmitting}
               >
                 파일 변경
               </Button>
@@ -205,24 +209,21 @@ const MaterialEdit = () => {
               )}
             </Box>
 
-            <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'center' }}>
-              <Button
-                variant="outlined"
-                onClick={() => navigate(`/materials/${id}`)}
-              >
-                취소
-              </Button>
+            <Box sx={{ mt: 4, display: 'flex', gap: 2 }}>
               <Button
                 type="submit"
                 variant="contained"
                 disabled={isSubmitting}
+                sx={{ minWidth: 120 }}
               >
-                {isSubmitting ? (
-                  <>
-                    <CircularProgress size={20} sx={{ mr: 1 }} />
-                    수정 중...
-                  </>
-                ) : '수정'}
+                {isSubmitting ? <CircularProgress size={24} /> : '수정'}
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => navigate(`/materials/${id}`)}
+                disabled={isSubmitting}
+              >
+                취소
               </Button>
             </Box>
           </form>

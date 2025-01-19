@@ -50,7 +50,7 @@ const JobPostForm = () => {
         title: title.trim(),
         content: content.trim(),
         author: {
-          id: currentUser.uid,
+          id: currentUser.id,
           email: currentUser.email,
           name: currentUser.email?.split('@')[0] || '익명'
         },

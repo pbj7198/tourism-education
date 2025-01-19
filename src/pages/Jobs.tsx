@@ -46,8 +46,7 @@ const Jobs = () => {
   useEffect(() => {
     const q = query(
       collection(db, 'job_posts'),
-      orderBy('isNotice', 'desc'), // 공지사항 우선 정렬
-      orderBy('createdAt', 'desc')
+      orderBy('createdAt', 'desc')  // 임시로 생성일 기준으로만 정렬
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -55,6 +54,12 @@ const Jobs = () => {
         id: doc.id,
         ...doc.data()
       })) as JobPost[];
+      // 프론트엔드에서 공지사항 정렬
+      postsData.sort((a, b) => {
+        if (a.isNotice && !b.isNotice) return -1;
+        if (!a.isNotice && b.isNotice) return 1;
+        return 0;
+      });
       setPosts(postsData);
     }, (error) => {
       console.error('게시글 로드 중 오류:', error);
@@ -131,7 +136,7 @@ const Jobs = () => {
                       {post.title}
                     </Box>
                   </TableCell>
-                  <TableCell align="center">{post.author?.name || '익명'}</TableCell>
+                  <TableCell align="center">{maskUserId(post.author?.email || null)}</TableCell>
                   <TableCell align="center">{formatDate(post.createdAt)}</TableCell>
                   <TableCell align="center">{post.views || 0}</TableCell>
                 </TableRow>
