@@ -212,6 +212,30 @@ const JobPostDetail = () => {
     return new Date(date).toLocaleDateString('ko-KR');
   };
 
+  // URL을 하이퍼링크로 변환하는 함수 추가
+  const convertUrlsToLinks = (text: string) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = text.split(urlRegex);
+    
+    return parts.map((part, index) => {
+      if (part.match(urlRegex)) {
+        return (
+          <a
+            key={index}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            style={{ color: '#1976d2', textDecoration: 'underline' }}
+          >
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
+  };
+
   if (error) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -251,7 +275,7 @@ const JobPostDetail = () => {
 
           {/* 게시글 본문 */}
           <Box sx={{ mb: 4, minHeight: '200px', whiteSpace: 'pre-wrap' }}>
-            {post.content}
+            {convertUrlsToLinks(post.content)}
           </Box>
 
           {/* 첨부파일 */}
