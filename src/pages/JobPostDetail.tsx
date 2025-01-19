@@ -225,8 +225,6 @@ const JobPostDetail = () => {
     );
   }
 
-  const isAuthor = currentUser && currentUser.email === post.author.id;
-
   return (
     <PageTransition>
       <Container maxWidth="lg" sx={{ py: 6 }}>
@@ -237,7 +235,7 @@ const JobPostDetail = () => {
               {post.title}
             </Typography>
             <Box sx={{ display: 'flex', gap: 2, color: '#666', fontSize: '0.9rem' }}>
-              <Box>작성자: {post.author.name}</Box>
+              <Box>작성자: {post.author.name || '익명'}</Box>
               <Divider orientation="vertical" flexItem />
               <Box>작성일: {formatDate(post.createdAt)}</Box>
               <Divider orientation="vertical" flexItem />
