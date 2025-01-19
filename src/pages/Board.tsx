@@ -13,9 +13,16 @@ import {
   Button,
   Box,
   Alert,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { collection, query, orderBy, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
@@ -36,6 +43,8 @@ const Board = () => {
   const { currentUser } = useAuth();
   const [posts, setPosts] = useState<BoardPost[]>([]);
   const [error, setError] = useState('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<BoardPost | null>(null);
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -59,16 +68,22 @@ const Board = () => {
     fetchPosts();
   }, []);
 
-  const handleCreatePost = () => {
-    if (!currentUser) {
-      navigate('/login');
-      return;
-    }
-    navigate('/board/new');
+  const handleEdit = (post: BoardPost) => {
+    navigate(`/board/${post.id}/edit`);
   };
 
-  const handleRowClick = (postId: string) => {
-    navigate(`/board/${postId}`);
+  const handleDelete = async () => {
+    if (!selectedPost) return;
+
+    try {
+      await deleteDoc(doc(db, 'board_posts', selectedPost.id));
+      setPosts(posts.filter(post => post.id !== selectedPost.id));
+      setDeleteDialogOpen(false);
+      setSelectedPost(null);
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      setError('게시글 삭제에 실패했습니다.');
+    }
   };
 
   return (
@@ -78,13 +93,15 @@ const Board = () => {
           <Typography variant="h4" component="h1">
             관광교사 게시판
           </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleCreatePost}
-          >
-            새 글 작성
-          </Button>
+          {currentUser && (
+            <Button
+              variant="contained"
+              onClick={() => navigate('/board/new')}
+              startIcon={<AddIcon />}
+            >
+              새 글 작성
+            </Button>
+          )}
         </Box>
 
         {error && (
@@ -99,35 +116,61 @@ const Board = () => {
           </Alert>
         )}
 
-        <TableContainer component={Paper}>
+        <TableContainer component={Paper} elevation={0}>
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell width="50%">제목</TableCell>
-                <TableCell>작성자</TableCell>
-                <TableCell>작성일</TableCell>
-                <TableCell align="center">조회수</TableCell>
+                <TableCell>제목</TableCell>
+                <TableCell align="center" width={150}>작성자</TableCell>
+                <TableCell align="center" width={150}>작성일</TableCell>
+                <TableCell align="center" width={100}>조회수</TableCell>
+                {currentUser?.role === 'admin' && (
+                  <TableCell align="center" width={120}>관리</TableCell>
+                )}
               </TableRow>
             </TableHead>
             <TableBody>
               {posts.map((post) => (
-                <TableRow 
+                <TableRow
                   key={post.id}
                   hover
-                  onClick={() => handleRowClick(post.id)}
+                  onClick={() => navigate(`/board/${post.id}`)}
                   sx={{ cursor: 'pointer' }}
                 >
                   <TableCell>{post.title}</TableCell>
                   <TableCell align="center">{maskUserId(post.authorId)}</TableCell>
-                  <TableCell align="center">
-                    {new Date(post.createdAt).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell align="center">{post.views}</TableCell>
+                  <TableCell align="center">{new Date(post.createdAt).toLocaleDateString('ko-KR')}</TableCell>
+                  <TableCell align="center">{post.views || 0}</TableCell>
+                  {currentUser?.role === 'admin' && (
+                    <TableCell align="center">
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEdit(post);
+                        }}
+                        sx={{ mr: 1 }}
+                      >
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedPost(post);
+                          setDeleteDialogOpen(true);
+                        }}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
               {posts.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} align="center">
+                  <TableCell colSpan={currentUser?.role === 'admin' ? 5 : 4} align="center">
                     게시글이 없습니다.
                   </TableCell>
                 </TableRow>
@@ -135,6 +178,25 @@ const Board = () => {
             </TableBody>
           </Table>
         </TableContainer>
+
+        {/* 삭제 확인 다이얼로그 */}
+        <Dialog
+          open={deleteDialogOpen}
+          onClose={() => setDeleteDialogOpen(false)}
+        >
+          <DialogTitle>게시글 삭제</DialogTitle>
+          <DialogContent>
+            정말로 이 게시글을 삭제하시겠습니까?
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDeleteDialogOpen(false)}>
+              취소
+            </Button>
+            <Button onClick={handleDelete} color="error">
+              삭제
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Container>
     </PageTransition>
   );
