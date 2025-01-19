@@ -14,9 +14,16 @@ import {
   Box,
   Alert,
   Chip,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { collection, query, orderBy, onSnapshot, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
@@ -42,31 +49,26 @@ const Jobs = () => {
   const { currentUser } = useAuth();
   const [posts, setPosts] = useState<JobPost[]>([]);
   const [error, setError] = useState('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<JobPost | null>(null);
 
   useEffect(() => {
-    const q = query(
-      collection(db, 'job_posts'),
-      orderBy('createdAt', 'desc')  // 임시로 생성일 기준으로만 정렬
-    );
+    const fetchPosts = async () => {
+      try {
+        const q = query(collection(db, 'job_posts'), orderBy('createdAt', 'desc'));
+        const querySnapshot = await getDocs(q);
+        const postsData = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as JobPost[];
+        setPosts(postsData);
+      } catch (error) {
+        console.error('Error fetching posts:', error);
+        setError('게시글을 불러오는데 실패했습니다.');
+      }
+    };
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const postsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as JobPost[];
-      // 프론트엔드에서 공지사항 정렬
-      postsData.sort((a, b) => {
-        if (a.isNotice && !b.isNotice) return -1;
-        if (!a.isNotice && b.isNotice) return 1;
-        return 0;
-      });
-      setPosts(postsData);
-    }, (error) => {
-      console.error('게시글 로드 중 오류:', error);
-      setError('게시글을 불러오는데 실패했습니다.');
-    });
-
-    return () => unsubscribe();
+    fetchPosts();
   }, []);
 
   const formatDate = (date: string | Timestamp) => {
@@ -74,6 +76,24 @@ const Jobs = () => {
       return date.toDate().toLocaleDateString('ko-KR');
     }
     return new Date(date).toLocaleDateString('ko-KR');
+  };
+
+  const handleEdit = (post: JobPost) => {
+    navigate(`/jobs/${post.id}/edit`);
+  };
+
+  const handleDelete = async () => {
+    if (!selectedPost) return;
+
+    try {
+      await deleteDoc(doc(db, 'job_posts', selectedPost.id));
+      setPosts(posts.filter(post => post.id !== selectedPost.id));
+      setDeleteDialogOpen(false);
+      setSelectedPost(null);
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      setError('게시글 삭제에 실패했습니다.');
+    }
   };
 
   if (error) {
@@ -110,6 +130,9 @@ const Jobs = () => {
                 <TableCell align="center" width={150}>작성자</TableCell>
                 <TableCell align="center" width={150}>작성일</TableCell>
                 <TableCell align="center" width={100}>조회수</TableCell>
+                {currentUser?.role === 'admin' && (
+                  <TableCell align="center" width={120}>관리</TableCell>
+                )}
               </TableRow>
             </TableHead>
             <TableBody>
@@ -139,11 +162,36 @@ const Jobs = () => {
                   <TableCell align="center">{maskUserId(post.author?.email || null)}</TableCell>
                   <TableCell align="center">{formatDate(post.createdAt)}</TableCell>
                   <TableCell align="center">{post.views || 0}</TableCell>
+                  {currentUser?.role === 'admin' && (
+                    <TableCell align="center">
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEdit(post);
+                        }}
+                        sx={{ mr: 1 }}
+                      >
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedPost(post);
+                          setDeleteDialogOpen(true);
+                        }}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
               {posts.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} align="center">
+                  <TableCell colSpan={currentUser?.role === 'admin' ? 5 : 4} align="center">
                     게시글이 없습니다.
                   </TableCell>
                 </TableRow>
@@ -151,6 +199,25 @@ const Jobs = () => {
             </TableBody>
           </Table>
         </TableContainer>
+
+        {/* 삭제 확인 다이얼로그 */}
+        <Dialog
+          open={deleteDialogOpen}
+          onClose={() => setDeleteDialogOpen(false)}
+        >
+          <DialogTitle>게시글 삭제</DialogTitle>
+          <DialogContent>
+            정말로 이 게시글을 삭제하시겠습니까?
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDeleteDialogOpen(false)}>
+              취소
+            </Button>
+            <Button onClick={handleDelete} color="error">
+              삭제
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Container>
     </PageTransition>
   );
