@@ -23,7 +23,7 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
-import { collection, query, orderBy, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, deleteDoc, doc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
@@ -38,7 +38,7 @@ interface MaterialPost {
     email: string | null;
     name: string;
   };
-  createdAt: string;
+  createdAt: Timestamp;
   views: number;
   fileUrl?: string;
   fileName?: string;
@@ -93,6 +93,10 @@ const TeachingMaterials = () => {
     window.open(fileUrl, '_blank');
   };
 
+  const formatDate = (date: Timestamp) => {
+    return date.toDate().toLocaleDateString('ko-KR');
+  };
+
   return (
     <PageTransition>
       <Container maxWidth="lg" sx={{ py: 6 }}>
@@ -141,7 +145,7 @@ const TeachingMaterials = () => {
                 >
                   <TableCell>{post.title}</TableCell>
                   <TableCell align="center">{maskUserId(post.author?.email || null)}</TableCell>
-                  <TableCell align="center">{new Date(post.createdAt).toLocaleDateString()}</TableCell>
+                  <TableCell align="center">{formatDate(post.createdAt)}</TableCell>
                   <TableCell align="center">{post.views || 0}</TableCell>
                   <TableCell align="center">
                     {post.fileUrl && (
