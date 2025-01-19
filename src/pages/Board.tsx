@@ -28,14 +28,18 @@ import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
 import { maskUserId } from '../utils/maskUserId';
+import { Timestamp } from 'firebase/firestore';
 
 interface BoardPost {
   id: string;
   title: string;
   content: string;
-  author: string;
-  authorId: string;
-  createdAt: string;
+  author: {
+    id: string;
+    email: string | null;
+    name: string;
+  };
+  createdAt: string | Timestamp;
   views: number;
   fileUrl?: string;
   fileName?: string;
@@ -66,27 +70,34 @@ const Board = () => {
     return () => unsubscribe();
   }, []);
 
-  const handleEdit = (post: BoardPost) => {
-    navigate(`/board/${post.id}/edit`);
+  const handleEdit = (postId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate(`/board/${postId}/edit`);
   };
 
-  const handleDelete = async () => {
-    if (!selectedPost) return;
+  const handleDelete = async (postId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm('정말로 이 게시글을 삭제하시겠습니까?')) {
+      return;
+    }
 
     try {
-      await deleteDoc(doc(db, 'board_posts', selectedPost.id));
-      setPosts(posts.filter(post => post.id !== selectedPost.id));
-      setDeleteDialogOpen(false);
-      setSelectedPost(null);
+      await deleteDoc(doc(db, 'board_posts', postId));
+      setPosts(posts.filter(post => post.id !== postId));
     } catch (error) {
       console.error('Error deleting post:', error);
       setError('게시글 삭제에 실패했습니다.');
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('ko-KR');
+  const formatDate = (dateString: string | Timestamp) => {
+    if (dateString instanceof Timestamp) {
+      const date = dateString.toDate();
+      return date.toLocaleDateString('ko-KR');
+    } else {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('ko-KR');
+    }
   };
 
   return (
@@ -127,9 +138,7 @@ const Board = () => {
                 <TableCell align="center" width={150}>작성자</TableCell>
                 <TableCell align="center" width={150}>작성일</TableCell>
                 <TableCell align="center" width={100}>조회수</TableCell>
-                {currentUser?.role === 'admin' && (
-                  <TableCell align="center" width={120}>관리</TableCell>
-                )}
+                {currentUser && <TableCell align="center" width={100}>관리</TableCell>}
               </TableRow>
             </TableHead>
             <TableBody>
@@ -148,29 +157,21 @@ const Board = () => {
                       )}
                     </Box>
                   </TableCell>
-                  <TableCell align="center">{maskUserId(post.authorId)}</TableCell>
+                  <TableCell align="center">{maskUserId(post.author?.email || null)}</TableCell>
                   <TableCell align="center">{formatDate(post.createdAt)}</TableCell>
                   <TableCell align="center">{post.views || 0}</TableCell>
-                  {currentUser?.role === 'admin' && (
+                  {currentUser && (currentUser.email === post.author?.email || currentUser.role === 'admin') && (
                     <TableCell align="center">
                       <IconButton
                         size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEdit(post);
-                        }}
-                        sx={{ mr: 1 }}
+                        onClick={(e) => handleEdit(post.id, e)}
                       >
                         <EditIcon />
                       </IconButton>
                       <IconButton
                         size="small"
                         color="error"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedPost(post);
-                          setDeleteDialogOpen(true);
-                        }}
+                        onClick={(e) => handleDelete(post.id, e)}
                       >
                         <DeleteIcon />
                       </IconButton>
@@ -180,7 +181,7 @@ const Board = () => {
               ))}
               {posts.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={currentUser?.role === 'admin' ? 5 : 4} align="center">
+                  <TableCell colSpan={currentUser ? 5 : 4} align="center">
                     게시글이 없습니다.
                   </TableCell>
                 </TableRow>
@@ -202,7 +203,7 @@ const Board = () => {
             <Button onClick={() => setDeleteDialogOpen(false)}>
               취소
             </Button>
-            <Button onClick={handleDelete} color="error">
+            <Button onClick={() => handleDelete(selectedPost?.id || '', {})} color="error">
               삭제
             </Button>
           </DialogActions>

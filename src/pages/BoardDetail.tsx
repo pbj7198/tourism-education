@@ -237,11 +237,33 @@ const BoardDetail = () => {
         <Paper elevation={0} sx={{ p: 4, borderRadius: '12px', border: '1px solid #e0e0e0' }}>
           {/* 게시글 헤더 */}
           <Box sx={{ mb: 4, borderBottom: '1px solid #e0e0e0', pb: 3 }}>
-            <Typography variant="h5" component="h1" gutterBottom sx={{ mb: 2 }}>
-              {post.title}
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h5" component="h1" gutterBottom sx={{ mb: 2 }}>
+                {post.title}
+              </Typography>
+              {currentUser && (currentUser.email === post.author?.email || currentUser.role === 'admin') && (
+                <Box>
+                  <Button
+                    variant="outlined"
+                    startIcon={<EditIcon />}
+                    onClick={() => navigate(`/board/${id}/edit`)}
+                    sx={{ mr: 1 }}
+                  >
+                    수정
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    startIcon={<DeleteIcon />}
+                    onClick={handleDelete}
+                  >
+                    삭제
+                  </Button>
+                </Box>
+              )}
+            </Box>
             <Box sx={{ display: 'flex', gap: 2, color: '#666', fontSize: '0.9rem' }}>
-              <Box>작성자: {author.name || '익명'}</Box>
+              <Box>작성자: {maskUserId(post.author?.email || null)}</Box>
               <Divider orientation="vertical" flexItem />
               <Box>작성일: {formatDate(post.createdAt)}</Box>
               <Divider orientation="vertical" flexItem />
@@ -271,25 +293,6 @@ const BoardDetail = () => {
                 }}
               >
                 {post.fileName}
-              </Button>
-            </Box>
-          )}
-
-          {/* 작성자 또는 관리자 액션 버튼 */}
-          {currentUser && (currentUser.email === author.email || currentUser.role === 'admin') && (
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', pt: 3, borderTop: '1px solid #e0e0e0' }}>
-              <Button
-                variant="outlined"
-                onClick={() => navigate(`/board/${id}/edit`)}
-              >
-                수정
-              </Button>
-              <Button
-                variant="outlined"
-                color="error"
-                onClick={handleDelete}
-              >
-                삭제
               </Button>
             </Box>
           )}
