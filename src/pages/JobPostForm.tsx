@@ -9,8 +9,10 @@ import {
   Box,
   Alert,
   CircularProgress,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
@@ -21,6 +23,7 @@ const JobPostForm = () => {
   
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [isNotice, setIsNotice] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -31,25 +34,36 @@ const JobPostForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !content.trim()) return;
+    if (!currentUser) {
+      setError('로그인이 필요합니다.');
+      return;
+    }
 
-    setIsSubmitting(true);
-    setError('');
+    if (!title.trim() || !content.trim()) {
+      setError('제목과 내용을 모두 입력해주세요.');
+      return;
+    }
 
     try {
-      // Firestore에 게시글 저장
-      const docRef = await addDoc(collection(db, 'job_posts'), {
-        title,
-        content,
-        authorId: currentUser.email,
-        createdAt: new Date().toISOString(),
-        views: 0
-      });
+      setIsSubmitting(true);
+      const postData = {
+        title: title.trim(),
+        content: content.trim(),
+        author: {
+          id: currentUser.uid,
+          email: currentUser.email,
+          name: currentUser.email?.split('@')[0] || '익명'
+        },
+        createdAt: serverTimestamp(),
+        views: 0,
+        isNotice: isNotice && currentUser.role === 'admin'
+      };
 
+      const docRef = await addDoc(collection(db, 'job_posts'), postData);
       navigate(`/jobs/${docRef.id}`);
     } catch (error) {
-      console.error('게시글 작성 중 오류:', error);
-      setError('게시글 작성에 실패했습니다.');
+      console.error('Error creating post:', error);
+      setError('게시글 등록에 실패했습니다.');
     } finally {
       setIsSubmitting(false);
     }
@@ -58,39 +72,50 @@ const JobPostForm = () => {
   return (
     <PageTransition>
       <Container maxWidth="lg" sx={{ py: 6 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          채용공고 등록
-        </Typography>
+        <Paper elevation={0} sx={{ p: 4, borderRadius: '12px', border: '1px solid #e0e0e0' }}>
+          <Typography variant="h5" component="h1" gutterBottom sx={{ mb: 4 }}>
+            채용소식 등록
+          </Typography>
 
-        <Paper elevation={0} sx={{ p: 4, mt: 4, borderRadius: '12px', border: '1px solid #e0e0e0' }}>
           {error && (
-            <Alert severity="error" sx={{ mb: 3 }}>
+            <Alert severity="error" sx={{ mb: 4 }}>
               {error}
             </Alert>
           )}
 
-          <form onSubmit={handleSubmit}>
+          <Box component="form" onSubmit={handleSubmit}>
             <TextField
               fullWidth
               label="제목"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              margin="normal"
-              required
+              sx={{ mb: 3 }}
             />
+
+            {currentUser?.role === 'admin' && (
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={isNotice}
+                    onChange={(e) => setIsNotice(e.target.checked)}
+                  />
+                }
+                label="공지사항으로 등록"
+                sx={{ mb: 2 }}
+              />
+            )}
 
             <TextField
               fullWidth
+              multiline
+              rows={15}
               label="내용"
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              multiline
-              rows={15}
-              margin="normal"
-              required
+              sx={{ mb: 3 }}
             />
 
-            <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'center' }}>
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
               <Button
                 variant="outlined"
                 onClick={() => navigate('/jobs')}
@@ -102,15 +127,10 @@ const JobPostForm = () => {
                 variant="contained"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? (
-                  <>
-                    <CircularProgress size={20} sx={{ mr: 1 }} />
-                    등록 중...
-                  </>
-                ) : '등록'}
+                {isSubmitting ? '등록 중...' : '등록'}
               </Button>
             </Box>
-          </form>
+          </Box>
         </Paper>
       </Container>
     </PageTransition>

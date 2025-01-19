@@ -26,6 +26,7 @@ import TeachingMaterials from './pages/TeachingMaterials';
 import MaterialForm from './pages/MaterialForm';
 import MaterialDetail from './pages/MaterialDetail';
 import MaterialEdit from './pages/MaterialEdit';
+import AdminPosts from './pages/AdminPosts';
 
 const theme = createTheme({
   typography: {
@@ -91,6 +92,7 @@ function App() {
                 <Route path="/materials/new" element={<MaterialForm />} />
                 <Route path="/materials/:id" element={<MaterialDetail />} />
                 <Route path="/materials/:id/edit" element={<MaterialEdit />} />
+                <Route path="/admin/posts" element={<AdminPosts />} />
               </Routes>
             </Box>
             <Footer />

@@ -16,6 +16,7 @@ import {
 import MenuIcon from '@mui/icons-material/Menu';
 import { useAuth } from '../contexts/AuthContext';
 import logoImage from '../../public/logo.png';
+import { Link } from 'react-router-dom';
 
 const pages = [
   { title: '한국관광교육연구회 소개', path: '/about' },
@@ -175,10 +176,10 @@ const Navbar = () => {
                 {currentUser.role === 'admin' && (
                   <Button
                     component={RouterLink}
-                    to="/admin/users"
+                    to="/admin/posts"
                     sx={{ color: 'text.primary' }}
                   >
-                    관리자
+                    관리
                   </Button>
                 )}
                 <Button

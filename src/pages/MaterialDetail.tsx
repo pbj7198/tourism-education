@@ -69,27 +69,26 @@ const MaterialDetail = () => {
     const fetchPost = async () => {
       if (!id) {
         setError('게시글 ID가 유효하지 않습니다.');
-        setLoading(false);
         return;
       }
 
       try {
         const docRef = doc(db, 'materials', id);
         const docSnap = await getDoc(docRef);
-
+        
         if (docSnap.exists()) {
-          setPost({
-            id: docSnap.id,
-            ...docSnap.data()
-          } as MaterialPost);
+          // 조회수 증가
+          await updateDoc(docRef, {
+            views: increment(1)
+          });
+          
+          setPost({ id: docSnap.id, ...docSnap.data() } as MaterialPost);
         } else {
           setError('게시글을 찾을 수 없습니다.');
         }
       } catch (error) {
         console.error('Error fetching post:', error);
         setError('게시글을 불러오는데 실패했습니다.');
-      } finally {
-        setLoading(false);
       }
     };
 
