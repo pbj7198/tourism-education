@@ -51,7 +51,7 @@ const About = () => {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: 3
+            gap: 0
           }}>
             {/* 소개 이미지 */}
             <Box sx={{ 
@@ -59,7 +59,7 @@ const About = () => {
               justifyContent: 'center',
               alignItems: 'center',
               width: '100%',
-              my: 4
+              mb: 1
             }}>
               <img
                 src={introImage}
@@ -78,8 +78,8 @@ const About = () => {
                 sx={{ 
                   fontWeight: 600,
                   color: '#333',
-                  mb: 2,
-                  pb: 1,
+                  mb: 1,
+                  pb: 0.5,
                   borderBottom: '2px solid #f0f0f0'
                 }}
               >
