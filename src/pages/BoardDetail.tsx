@@ -22,14 +22,18 @@ import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
 import { maskUserId } from '../utils/maskUserId';
+import { Timestamp } from 'firebase/firestore';
 
 interface BoardPost {
   id: string;
   title: string;
   content: string;
-  author: string;
-  authorId: string;
-  createdAt: string;
+  author: {
+    id: string;
+    email: string | null;
+    name: string;
+  };
+  createdAt: string | Timestamp;
   views: number;
 }
 
@@ -57,9 +61,13 @@ const BoardDetail = () => {
 
   useEffect(() => {
     const fetchPost = async () => {
-      if (!id) return;
+      if (!id) {
+        setError('게시글 ID가 유효하지 않습니다.');
+        return;
+      }
+
       try {
-        const docRef = doc(db, 'board_posts', id);
+        const docRef = doc(db, 'board', id);
         const docSnap = await getDoc(docRef);
         
         if (docSnap.exists()) {
@@ -72,7 +80,7 @@ const BoardDetail = () => {
           setError('게시글을 찾을 수 없습니다.');
         }
       } catch (error) {
-        console.error('게시글 로드 중 오류:', error);
+        console.error('Error fetching post:', error);
         setError('게시글을 불러오는데 실패했습니다.');
       }
     };
@@ -194,6 +202,13 @@ const BoardDetail = () => {
     }
   };
 
+  const formatDate = (date: string | Timestamp) => {
+    if (date instanceof Timestamp) {
+      return date.toDate().toLocaleDateString('ko-KR');
+    }
+    return new Date(date).toLocaleDateString('ko-KR');
+  };
+
   if (error) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -210,7 +225,7 @@ const BoardDetail = () => {
     );
   }
 
-  const isAuthor = currentUser && currentUser.email === post.authorId;
+  const isAuthor = currentUser && currentUser.email === post.author.id;
 
   return (
     <PageTransition>
@@ -224,7 +239,7 @@ const BoardDetail = () => {
             <Box sx={{ display: 'flex', gap: 2, color: '#666', fontSize: '0.9rem' }}>
               <Box>작성자: {post.author.name}</Box>
               <Divider orientation="vertical" flexItem />
-              <Box>작성일: {new Date(post.createdAt).toLocaleDateString()}</Box>
+              <Box>작성일: {formatDate(post.createdAt)}</Box>
               <Divider orientation="vertical" flexItem />
               <Box>조회수: {post.views}</Box>
             </Box>
