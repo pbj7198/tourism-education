@@ -8,7 +8,7 @@ const Introduction = () => {
         <Paper elevation={3} sx={{ p: 4 }}>
           <Box sx={{ textAlign: 'center', mb: 4 }}>
             <Box sx={{ 
-              width: '50%', 
+              width: '25%',
               margin: '0 auto',
               marginBottom: '2rem'
             }}>
