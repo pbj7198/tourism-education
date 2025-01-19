@@ -18,14 +18,14 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
-import QuillEditor from '../components/QuillEditor';
-import type ReactQuill from 'react-quill';
+import RichTextEditor from '../components/RichTextEditor';
+import type { Editor } from '@tinymce/tinymce-react';
 
 const MaterialForm = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const quillRef = useRef<ReactQuill>(null);
+  const editorRef = useRef<Editor>(null);
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -79,8 +79,8 @@ const MaterialForm = () => {
       }
 
       const docRef = await addDoc(collection(db, 'teaching_materials'), {
-        title: title.trim(),
-        content: content.trim(),
+        title,
+        content,
         author: {
           id: currentUser.id,
           email: currentUser.email,
@@ -125,9 +125,9 @@ const MaterialForm = () => {
               required
             />
 
-            <Box sx={{ mt: 3, mb: 3, '& .ql-container': { height: '400px' } }}>
-              <QuillEditor
-                ref={quillRef}
+            <Box sx={{ mt: 3, mb: 3 }}>
+              <RichTextEditor
+                ref={editorRef}
                 value={content}
                 onChange={setContent}
                 placeholder="내용을 입력하세요..."
