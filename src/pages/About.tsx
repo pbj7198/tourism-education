@@ -46,9 +46,21 @@ const About = () => {
           </Box>
 
           {/* 게시글 본문 */}
-          <Box sx={{ mb: 6 }}>
+          <Box sx={{ 
+            mb: 6,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 3
+          }}>
             {/* 소개 이미지 */}
-            <Box sx={{ mb: 1, textAlign: 'center' }}>
+            <Box sx={{ 
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              width: '100%',
+              my: 4
+            }}>
               <img
                 src={introImage}
                 alt="한국관광교육연구회 소개"
@@ -60,7 +72,7 @@ const About = () => {
             </Box>
 
             {/* 개요 섹션 */}
-            <Box sx={{ mb: 4 }}>
+            <Box sx={{ width: '100%' }}>
               <Typography 
                 variant="h5" 
                 sx={{ 
