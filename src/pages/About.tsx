@@ -48,7 +48,7 @@ const About = () => {
           {/* 게시글 본문 */}
           <Box sx={{ mb: 6 }}>
             {/* 소개 이미지 */}
-            <Box sx={{ mb: 3, textAlign: 'center' }}>
+            <Box sx={{ mb: 1, textAlign: 'center' }}>
               <img
                 src={introImage}
                 alt="한국관광교육연구회 소개"
@@ -66,8 +66,8 @@ const About = () => {
                 sx={{ 
                   fontWeight: 600,
                   color: '#333',
-                  mb: 3,
-                  pb: 2,
+                  mb: 2,
+                  pb: 1,
                   borderBottom: '2px solid #f0f0f0'
                 }}
               >
