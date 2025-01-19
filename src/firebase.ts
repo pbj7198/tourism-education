@@ -19,9 +19,7 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 
 // Storage 설정
-const storage = getStorage(app, "gs://tourism-education");
-storage.maxOperationRetryTime = 30000;
-storage.maxUploadRetryTime = 30000;
+const storage = getStorage(app);
 
 export { storage };
 export default app; 
