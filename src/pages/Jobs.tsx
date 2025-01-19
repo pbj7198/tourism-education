@@ -58,7 +58,7 @@ const Jobs = () => {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const q = query(collection(db, 'job_posts'), orderBy('createdAt', 'desc'));
+        const q = query(collection(db, 'job_posts'), orderBy('isNotice', 'desc'), orderBy('createdAt', 'desc'));
         const querySnapshot = await getDocs(q);
         const postsData = querySnapshot.docs.map(doc => ({
           id: doc.id,
