@@ -22,7 +22,6 @@ import PostDetail from './pages/PostDetail';
 import PostForm from './pages/PostForm';
 import PostEdit from './pages/PostEdit';
 import Contact from './pages/Contact';
-import AdminPosts from './pages/AdminPosts';
 import TeachingMaterials from './pages/TeachingMaterials';
 import MaterialForm from './pages/MaterialForm';
 import MaterialDetail from './pages/MaterialDetail';
@@ -93,7 +92,6 @@ function App() {
                 <Route path="/posts/new" element={<PostForm />} />
                 <Route path="/posts/:id/edit" element={<PostEdit />} />
                 <Route path="/contact" element={<Contact />} />
-                <Route path="/admin/posts" element={<AdminPosts />} />
                 <Route path="/materials" element={<TeachingMaterials />} />
                 <Route path="/materials/new" element={<MaterialForm />} />
                 <Route path="/materials/:id" element={<MaterialDetail />} />

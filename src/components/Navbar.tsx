@@ -176,10 +176,10 @@ const Navbar = () => {
                 {currentUser.role === 'admin' && (
                   <Button
                     component={RouterLink}
-                    to="/admin/posts"
+                    to="/admin/users"
                     sx={{ color: 'text.primary' }}
                   >
-                    관리
+                    회원관리
                   </Button>
                 )}
                 <Button
