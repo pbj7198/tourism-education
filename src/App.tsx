@@ -76,6 +76,9 @@ function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/notice" element={<Notice />} />
+                <Route path="/notice/new" element={<PostForm />} />
+                <Route path="/notice/:id" element={<PostDetail />} />
+                <Route path="/notice/:id/edit" element={<PostEdit />} />
                 <Route path="/resources" element={<Resources />} />
                 <Route path="/jobs" element={<Jobs />} />
                 <Route path="/jobs/new" element={<JobPostForm />} />
