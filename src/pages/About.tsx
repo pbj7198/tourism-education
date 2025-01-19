@@ -57,7 +57,7 @@ const About = () => {
               justifyContent: 'center',
               alignItems: 'center',
               width: '100%',
-              mb: 0
+              mb: -13
             }}>
               <img
                 src={introImage}
@@ -87,13 +87,14 @@ const About = () => {
                 sx={{ 
                   fontSize: '1.1rem',
                   color: '#444',
-                  lineHeight: 1.8,
+                  lineHeight: 2,
                   whiteSpace: 'pre-line'
                 }}
               >
                 특성화고등학교 「관광」 과목의 교사 모임으로
                 관광 교육에 필요한 정보를 공유하고 관광 교육의 구심점 역할을 수행하고자 하는 연구회
               </Typography>
+              <br/>
             </Box>
 
             {/* 주요활동 섹션 */}
