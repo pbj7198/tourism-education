@@ -58,13 +58,25 @@ const Jobs = () => {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const q = query(collection(db, 'job_posts'), orderBy('isNotice', 'desc'), orderBy('createdAt', 'desc'));
+        const q = query(collection(db, 'job_posts'), orderBy('createdAt', 'desc'));
         const querySnapshot = await getDocs(q);
         const postsData = querySnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         })) as JobPost[];
-        setPosts(postsData);
+        
+        // 클라이언트 측에서 정렬
+        const sortedPosts = postsData.sort((a, b) => {
+          if (a.isNotice && !b.isNotice) return -1;
+          if (!a.isNotice && b.isNotice) return 1;
+          
+          // 같은 카테고리 내에서는 최신순 정렬
+          const dateA = a.createdAt instanceof Timestamp ? a.createdAt.toDate() : new Date(a.createdAt);
+          const dateB = b.createdAt instanceof Timestamp ? b.createdAt.toDate() : new Date(b.createdAt);
+          return dateB.getTime() - dateA.getTime();
+        });
+        
+        setPosts(sortedPosts);
       } catch (error) {
         console.error('Error fetching posts:', error);
         setError('게시글을 불러오는데 실패했습니다.');
