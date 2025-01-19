@@ -48,19 +48,19 @@ const About = () => {
           {/* 게시글 본문 */}
           <Box sx={{ mb: 6 }}>
             {/* 소개 이미지 */}
-            <Box sx={{ mb: 6, textAlign: 'center' }}>
+            <Box sx={{ mb: 3, textAlign: 'center' }}>
               <img
                 src={introImage}
                 alt="한국관광교육연구회 소개"
                 style={{ 
-                  maxWidth: '100%', 
+                  maxWidth: '60%', 
                   height: 'auto',
                 }}
               />
             </Box>
 
             {/* 개요 섹션 */}
-            <Box sx={{ mb: 6 }}>
+            <Box sx={{ mb: 4 }}>
               <Typography 
                 variant="h5" 
                 sx={{ 
@@ -81,7 +81,7 @@ const About = () => {
                   whiteSpace: 'pre-line'
                 }}
               >
-                특성화고등학교 표시교과 「관광」 과목의 교사 모임으로
+                특성화고등학교 「관광」 과목의 교사 모임으로
                 관광 교육에 필요한 정보를 공유하고 관광 교육의 구심점 역할을 수행하고자 하는 연구회
               </Typography>
             </Box>
