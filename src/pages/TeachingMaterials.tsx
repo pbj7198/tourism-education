@@ -13,33 +13,36 @@ import {
   TableRow,
   Box,
   Alert,
+  IconButton,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import DownloadIcon from '@mui/icons-material/Download';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
 import { maskUserId } from '../utils/maskUserId';
 
-interface JobPost {
+interface MaterialPost {
   id: string;
   title: string;
-  content: string;
   author: string;
   authorId: string;
   createdAt: string;
   views: number;
+  fileUrl?: string;
+  fileName?: string;
 }
 
-const Jobs = () => {
+const TeachingMaterials = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const [posts, setPosts] = useState<JobPost[]>([]);
+  const [posts, setPosts] = useState<MaterialPost[]>([]);
   const [error, setError] = useState('');
 
   useEffect(() => {
     const q = query(
-      collection(db, 'job_posts'),
+      collection(db, 'teaching_materials'),
       orderBy('createdAt', 'desc')
     );
 
@@ -47,7 +50,7 @@ const Jobs = () => {
       const postsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      })) as JobPost[];
+      })) as MaterialPost[];
       setPosts(postsData);
     }, (error) => {
       console.error('게시글 로드 중 오류:', error);
@@ -58,11 +61,11 @@ const Jobs = () => {
   }, []);
 
   const handleCreatePost = () => {
-    navigate('/jobs/new');
+    navigate('/materials/new');
   };
 
   const handleRowClick = (postId: string) => {
-    navigate(`/jobs/${postId}`);
+    navigate(`/materials/${postId}`);
   };
 
   if (error) {
@@ -78,7 +81,7 @@ const Jobs = () => {
       <Container maxWidth="lg" sx={{ py: 6 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
           <Typography variant="h4" component="h1">
-            관광교사 채용소식
+            관광교사 임용자료
           </Typography>
           {currentUser && (
             <Button
@@ -86,7 +89,7 @@ const Jobs = () => {
               startIcon={<AddIcon />}
               onClick={handleCreatePost}
             >
-              채용공고 등록
+              자료 등록
             </Button>
           )}
         </Box>
@@ -99,6 +102,7 @@ const Jobs = () => {
                 <TableCell align="center" width={150}>작성자</TableCell>
                 <TableCell align="center" width={200}>작성일</TableCell>
                 <TableCell align="center" width={100}>조회수</TableCell>
+                <TableCell align="center" width={100}>첨부파일</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -115,12 +119,25 @@ const Jobs = () => {
                     {new Date(post.createdAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell align="center">{post.views}</TableCell>
+                  <TableCell align="center">
+                    {post.fileUrl && (
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(post.fileUrl, '_blank');
+                        }}
+                      >
+                        <DownloadIcon />
+                      </IconButton>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
               {posts.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} align="center" sx={{ py: 3 }}>
-                    등록된 채용공고가 없습니다.
+                  <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
+                    등록된 자료가 없습니다.
                   </TableCell>
                 </TableRow>
               )}
@@ -132,4 +149,4 @@ const Jobs = () => {
   );
 };
 
-export default Jobs;
+export default TeachingMaterials; 

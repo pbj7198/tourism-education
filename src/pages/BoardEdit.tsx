@@ -3,19 +3,18 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   Container,
   Typography,
-  Paper,
   TextField,
   Button,
   Box,
+  Paper,
   Alert,
-  CircularProgress,
 } from '@mui/material';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
 
-interface JobPost {
+interface BoardPost {
   id: string;
   title: string;
   content: string;
@@ -25,30 +24,33 @@ interface JobPost {
   views: number;
 }
 
-const JobPostEdit = () => {
+const BoardEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-
-  const [post, setPost] = useState<JobPost | null>(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [post, setPost] = useState<BoardPost | null>(null);
 
   useEffect(() => {
     const fetchPost = async () => {
       if (!id) return;
-
       try {
-        const docRef = doc(db, 'job_posts', id);
+        const docRef = doc(db, 'board_posts', id);
         const docSnap = await getDoc(docRef);
-
+        
         if (docSnap.exists()) {
-          const postData = { id: docSnap.id, ...docSnap.data() } as JobPost;
+          const postData = { id: docSnap.id, ...docSnap.data() } as BoardPost;
           setPost(postData);
           setTitle(postData.title);
           setContent(postData.content);
+
+          // 작성자가 아닌 경우 접근 제한
+          if (currentUser?.id !== postData.authorId) {
+            navigate('/board');
+          }
         } else {
           setError('게시글을 찾을 수 없습니다.');
         }
@@ -59,41 +61,43 @@ const JobPostEdit = () => {
     };
 
     fetchPost();
-  }, [id]);
-
-  useEffect(() => {
-    if (post && (!currentUser || currentUser.id !== post.authorId)) {
-      navigate(`/jobs/${id}`);
-    }
-  }, [post, currentUser, id, navigate]);
+  }, [id, currentUser, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !content.trim()) return;
-
-    setIsSubmitting(true);
-    setError('');
+    
+    if (!title.trim() || !content.trim()) {
+      setError('제목과 내용을 모두 입력해주세요.');
+      return;
+    }
 
     try {
-      // Firestore 문서 업데이트
-      await updateDoc(doc(db, 'job_posts', id!), {
+      setIsSubmitting(true);
+      setError('');
+
+      if (!id) return;
+
+      await updateDoc(doc(db, 'board_posts', id), {
         title,
         content,
+        updatedAt: new Date().toISOString()
       });
 
-      navigate(`/jobs/${id}`);
+      navigate(`/board/${id}`);
     } catch (error) {
       console.error('게시글 수정 중 오류:', error);
-      setError('게시글 수정에 실패했습니다.');
+      setError('게시글 수정에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (error) {
+  if (!currentUser) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Alert severity="error">{error}</Alert>
+        <Alert severity="error">
+          로그인이 필요한 서비스입니다.
+        </Alert>
       </Container>
     );
   }
@@ -109,36 +113,43 @@ const JobPostEdit = () => {
   return (
     <PageTransition>
       <Container maxWidth="lg" sx={{ py: 6 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          채용공고 수정
-        </Typography>
+        <Paper elevation={0} sx={{ p: 5, borderRadius: '12px', border: '1px solid #e0e0e0' }}>
+          <Typography variant="h5" component="h1" gutterBottom sx={{ mb: 4, fontWeight: 600 }}>
+            게시글 수정
+          </Typography>
 
-        <Paper elevation={0} sx={{ p: 4, mt: 4, borderRadius: '12px', border: '1px solid #e0e0e0' }}>
+          {error && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {error}
+            </Alert>
+          )}
+
           <form onSubmit={handleSubmit}>
             <TextField
-              fullWidth
               label="제목"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              margin="normal"
+              fullWidth
               required
+              sx={{ mb: 3 }}
             />
 
             <TextField
-              fullWidth
               label="내용"
               value={content}
               onChange={(e) => setContent(e.target.value)}
               multiline
               rows={15}
-              margin="normal"
+              fullWidth
               required
+              sx={{ mb: 3 }}
             />
 
-            <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'center' }}>
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
               <Button
                 variant="outlined"
-                onClick={() => navigate(`/jobs/${id}`)}
+                onClick={() => navigate(`/board/${id}`)}
+                disabled={isSubmitting}
               >
                 취소
               </Button>
@@ -147,12 +158,7 @@ const JobPostEdit = () => {
                 variant="contained"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? (
-                  <>
-                    <CircularProgress size={20} sx={{ mr: 1 }} />
-                    수정 중...
-                  </>
-                ) : '수정'}
+                {isSubmitting ? '저장 중...' : '저장'}
               </Button>
             </Box>
           </form>
@@ -162,4 +168,4 @@ const JobPostEdit = () => {
   );
 };
 
-export default JobPostEdit; 
+export default BoardEdit; 

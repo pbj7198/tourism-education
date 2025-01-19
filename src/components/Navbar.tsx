@@ -20,9 +20,10 @@ import logoImage from '../../public/logo.png';
 const pages = [
   { title: '한국관광교육연구회 소개', path: '/about' },
   { title: '연구회 공지사항', path: '/notice' },
-  { title: '관광교사 임용자료', path: '/resources' },
+  { title: '관광교사 임용자료', path: '/materials' },
   { title: '관광교사 채용소식', path: '/jobs' },
   { title: '관광교사 게시판', path: '/board' },
+  { title: '문의하기', path: '/contact' },
 ];
 
 const Navbar = () => {

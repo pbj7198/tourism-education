@@ -16,14 +16,16 @@ import {
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import DownloadIcon from '@mui/icons-material/Download';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { doc, getDoc, deleteDoc, updateDoc, increment, collection, addDoc, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { db } from '../firebase';
+import { ref, deleteObject } from 'firebase/storage';
+import { db, storage } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
 import { maskUserId } from '../utils/maskUserId';
 
-interface JobPost {
+interface MaterialPost {
   id: string;
   title: string;
   content: string;
@@ -31,6 +33,8 @@ interface JobPost {
   authorId: string;
   createdAt: string;
   views: number;
+  fileUrl?: string;
+  fileName?: string;
 }
 
 interface Comment {
@@ -41,11 +45,11 @@ interface Comment {
   createdAt: string;
 }
 
-const JobPostDetail = () => {
+const MaterialDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const [post, setPost] = useState<JobPost | null>(null);
+  const [post, setPost] = useState<MaterialPost | null>(null);
   const [error, setError] = useState('');
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -59,7 +63,7 @@ const JobPostDetail = () => {
     const fetchPost = async () => {
       if (!id) return;
       try {
-        const docRef = doc(db, 'job_posts', id);
+        const docRef = doc(db, 'teaching_materials', id);
         const docSnap = await getDoc(docRef);
         
         if (docSnap.exists()) {
@@ -67,7 +71,7 @@ const JobPostDetail = () => {
             views: increment(1)
           });
           
-          setPost({ id: docSnap.id, ...docSnap.data() } as JobPost);
+          setPost({ id: docSnap.id, ...docSnap.data() } as MaterialPost);
         } else {
           setError('게시글을 찾을 수 없습니다.');
         }
@@ -84,7 +88,7 @@ const JobPostDetail = () => {
     if (!id) return;
 
     const q = query(
-      collection(db, 'job_posts', id, 'comments'),
+      collection(db, 'teaching_materials', id, 'comments'),
       orderBy('createdAt', 'desc')
     );
 
@@ -100,15 +104,21 @@ const JobPostDetail = () => {
   }, [id]);
 
   const handleEdit = () => {
-    navigate(`/jobs/${id}/edit`);
+    navigate(`/materials/${id}/edit`);
   };
 
   const handleDelete = async () => {
     if (!id || !window.confirm('정말로 이 게시글을 삭제하시겠습니까?')) return;
 
     try {
-      await deleteDoc(doc(db, 'job_posts', id));
-      navigate('/jobs');
+      // 첨부 파일이 있는 경우 Storage에서 삭제
+      if (post?.fileUrl) {
+        const fileRef = ref(storage, post.fileUrl);
+        await deleteObject(fileRef);
+      }
+
+      await deleteDoc(doc(db, 'teaching_materials', id));
+      navigate('/materials');
     } catch (error) {
       console.error('게시글 삭제 중 오류:', error);
       setError('게시글 삭제에 실패했습니다.');
@@ -125,11 +135,12 @@ const JobPostDetail = () => {
       setIsSubmitting(true);
       const commentData = {
         content: newComment,
-        authorId: currentUser.email,
+        author: currentUser.name,
+        authorId: currentUser.id,
         createdAt: new Date().toISOString()
       };
 
-      await addDoc(collection(db, 'job_posts', id!, 'comments'), commentData);
+      await addDoc(collection(db, 'teaching_materials', id!, 'comments'), commentData);
       setNewComment('');
     } catch (error) {
       console.error('댓글 작성 중 오류:', error);
@@ -159,7 +170,7 @@ const JobPostDetail = () => {
     if (!editedCommentContent.trim()) return;
 
     try {
-      await updateDoc(doc(db, 'job_posts', id!, 'comments', commentId), {
+      await updateDoc(doc(db, 'teaching_materials', id!, 'comments', commentId), {
         content: editedCommentContent,
       });
       setEditingCommentId(null);
@@ -174,7 +185,7 @@ const JobPostDetail = () => {
     if (!window.confirm('정말로 이 댓글을 삭제하시겠습니까?')) return;
 
     try {
-      await deleteDoc(doc(db, 'job_posts', id!, 'comments', commentId));
+      await deleteDoc(doc(db, 'teaching_materials', id!, 'comments', commentId));
       handleCommentMenuClose();
     } catch (error) {
       console.error('댓글 삭제 중 오류:', error);
@@ -236,6 +247,20 @@ const JobPostDetail = () => {
           <Typography sx={{ whiteSpace: 'pre-wrap', mb: 4 }}>
             {post.content}
           </Typography>
+
+          {post.fileUrl && (
+            <Box sx={{ mt: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="body2">첨부파일: {post.fileName}</Typography>
+                <IconButton
+                  size="small"
+                  onClick={() => window.open(post.fileUrl, '_blank')}
+                >
+                  <DownloadIcon />
+                </IconButton>
+              </Box>
+            </Box>
+          )}
 
           {/* 댓글 섹션 */}
           <Box sx={{ mt: 6, pt: 4, borderTop: '1px solid #e0e0e0' }}>
@@ -354,7 +379,7 @@ const JobPostDetail = () => {
           <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
             <Button
               variant="outlined"
-              onClick={() => navigate('/jobs')}
+              onClick={() => navigate('/materials')}
             >
               목록으로
             </Button>
@@ -365,4 +390,4 @@ const JobPostDetail = () => {
   );
 };
 
-export default JobPostDetail; 
+export default MaterialDetail; 

@@ -3,53 +3,58 @@ import { useNavigate } from 'react-router-dom';
 import {
   Container,
   Typography,
-  Paper,
   TextField,
   Button,
   Box,
+  Paper,
   Alert,
-  CircularProgress,
 } from '@mui/material';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
 
-const JobPostForm = () => {
+const BoardForm = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!currentUser) {
-    navigate('/jobs');
-    return null;
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Alert severity="error">
+          로그인이 필요한 서비스입니다.
+        </Alert>
+      </Container>
+    );
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !content.trim()) return;
-
-    setIsSubmitting(true);
-    setError('');
+    
+    if (!title.trim() || !content.trim()) {
+      setError('제목과 내용을 모두 입력해주세요.');
+      return;
+    }
 
     try {
-      // Firestore에 게시글 저장
-      const docRef = await addDoc(collection(db, 'job_posts'), {
+      setIsSubmitting(true);
+      setError('');
+
+      const docRef = await addDoc(collection(db, 'board_posts'), {
         title,
         content,
         authorId: currentUser.email,
         createdAt: new Date().toISOString(),
         views: 0
       });
-
-      navigate(`/jobs/${docRef.id}`);
+      navigate('/board');
     } catch (error) {
       console.error('게시글 작성 중 오류:', error);
-      setError('게시글 작성에 실패했습니다.');
+      setError('게시글 작성에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setIsSubmitting(false);
     }
@@ -58,11 +63,11 @@ const JobPostForm = () => {
   return (
     <PageTransition>
       <Container maxWidth="lg" sx={{ py: 6 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          채용공고 등록
-        </Typography>
+        <Paper elevation={0} sx={{ p: 5, borderRadius: '12px', border: '1px solid #e0e0e0' }}>
+          <Typography variant="h5" component="h1" gutterBottom sx={{ mb: 4, fontWeight: 600 }}>
+            새 글 작성
+          </Typography>
 
-        <Paper elevation={0} sx={{ p: 4, mt: 4, borderRadius: '12px', border: '1px solid #e0e0e0' }}>
           {error && (
             <Alert severity="error" sx={{ mb: 3 }}>
               {error}
@@ -71,29 +76,30 @@ const JobPostForm = () => {
 
           <form onSubmit={handleSubmit}>
             <TextField
-              fullWidth
               label="제목"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              margin="normal"
+              fullWidth
               required
+              sx={{ mb: 3 }}
             />
 
             <TextField
-              fullWidth
               label="내용"
               value={content}
               onChange={(e) => setContent(e.target.value)}
               multiline
               rows={15}
-              margin="normal"
+              fullWidth
               required
+              sx={{ mb: 3 }}
             />
 
-            <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'center' }}>
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
               <Button
                 variant="outlined"
-                onClick={() => navigate('/jobs')}
+                onClick={() => navigate('/board')}
+                disabled={isSubmitting}
               >
                 취소
               </Button>
@@ -102,12 +108,7 @@ const JobPostForm = () => {
                 variant="contained"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? (
-                  <>
-                    <CircularProgress size={20} sx={{ mr: 1 }} />
-                    등록 중...
-                  </>
-                ) : '등록'}
+                {isSubmitting ? '저장 중...' : '저장'}
               </Button>
             </Box>
           </form>
@@ -117,4 +118,4 @@ const JobPostForm = () => {
   );
 };
 
-export default JobPostForm; 
+export default BoardForm; 

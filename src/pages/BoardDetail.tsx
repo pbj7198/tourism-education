@@ -23,7 +23,7 @@ import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
 import { maskUserId } from '../utils/maskUserId';
 
-interface JobPost {
+interface BoardPost {
   id: string;
   title: string;
   content: string;
@@ -41,11 +41,11 @@ interface Comment {
   createdAt: string;
 }
 
-const JobPostDetail = () => {
+const BoardDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const [post, setPost] = useState<JobPost | null>(null);
+  const [post, setPost] = useState<BoardPost | null>(null);
   const [error, setError] = useState('');
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -59,7 +59,7 @@ const JobPostDetail = () => {
     const fetchPost = async () => {
       if (!id) return;
       try {
-        const docRef = doc(db, 'job_posts', id);
+        const docRef = doc(db, 'board_posts', id);
         const docSnap = await getDoc(docRef);
         
         if (docSnap.exists()) {
@@ -67,7 +67,7 @@ const JobPostDetail = () => {
             views: increment(1)
           });
           
-          setPost({ id: docSnap.id, ...docSnap.data() } as JobPost);
+          setPost({ id: docSnap.id, ...docSnap.data() } as BoardPost);
         } else {
           setError('게시글을 찾을 수 없습니다.');
         }
@@ -84,7 +84,7 @@ const JobPostDetail = () => {
     if (!id) return;
 
     const q = query(
-      collection(db, 'job_posts', id, 'comments'),
+      collection(db, 'board_posts', id, 'comments'),
       orderBy('createdAt', 'desc')
     );
 
@@ -100,15 +100,15 @@ const JobPostDetail = () => {
   }, [id]);
 
   const handleEdit = () => {
-    navigate(`/jobs/${id}/edit`);
+    navigate(`/board/${id}/edit`);
   };
 
   const handleDelete = async () => {
     if (!id || !window.confirm('정말로 이 게시글을 삭제하시겠습니까?')) return;
 
     try {
-      await deleteDoc(doc(db, 'job_posts', id));
-      navigate('/jobs');
+      await deleteDoc(doc(db, 'board_posts', id));
+      navigate('/board');
     } catch (error) {
       console.error('게시글 삭제 중 오류:', error);
       setError('게시글 삭제에 실패했습니다.');
@@ -125,11 +125,12 @@ const JobPostDetail = () => {
       setIsSubmitting(true);
       const commentData = {
         content: newComment,
-        authorId: currentUser.email,
+        author: currentUser.name,
+        authorId: currentUser.id,
         createdAt: new Date().toISOString()
       };
 
-      await addDoc(collection(db, 'job_posts', id!, 'comments'), commentData);
+      await addDoc(collection(db, 'board_posts', id!, 'comments'), commentData);
       setNewComment('');
     } catch (error) {
       console.error('댓글 작성 중 오류:', error);
@@ -159,7 +160,7 @@ const JobPostDetail = () => {
     if (!editedCommentContent.trim()) return;
 
     try {
-      await updateDoc(doc(db, 'job_posts', id!, 'comments', commentId), {
+      await updateDoc(doc(db, 'board_posts', id!, 'comments', commentId), {
         content: editedCommentContent,
       });
       setEditingCommentId(null);
@@ -174,7 +175,7 @@ const JobPostDetail = () => {
     if (!window.confirm('정말로 이 댓글을 삭제하시겠습니까?')) return;
 
     try {
-      await deleteDoc(doc(db, 'job_posts', id!, 'comments', commentId));
+      await deleteDoc(doc(db, 'board_posts', id!, 'comments', commentId));
       handleCommentMenuClose();
     } catch (error) {
       console.error('댓글 삭제 중 오류:', error);
@@ -354,7 +355,7 @@ const JobPostDetail = () => {
           <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
             <Button
               variant="outlined"
-              onClick={() => navigate('/jobs')}
+              onClick={() => navigate('/board')}
             >
               목록으로
             </Button>
@@ -365,4 +366,4 @@ const JobPostDetail = () => {
   );
 };
 
-export default JobPostDetail; 
+export default BoardDetail; 
