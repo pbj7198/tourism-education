@@ -1,42 +1,38 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Container, 
-  Box, 
-  Typography, 
+import {
+  Container,
+  Typography,
+  Box,
   Button,
+  Alert,
+  Paper,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   IconButton,
-  Alert
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import PageTransition from '../components/PageTransition';
-import { useState, useEffect } from 'react';
-import { collection, getDocs, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
-import { db } from '../firebase';
-import { addTestPosts } from '../utils/addTestData';
-import { useAuth } from '../contexts/AuthContext';
-import { maskUserId } from '../utils/maskUserId';
-import { Timestamp } from 'firebase/firestore';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
+import { collection, getDocs, deleteDoc, doc, query, orderBy, Timestamp } from 'firebase/firestore';
+import { db } from '../firebase';
+import { useAuth } from '../contexts/AuthContext';
+import PageTransition from '../components/PageTransition';
+import { maskUserId } from '../utils/maskUserId';
 
 interface Post {
   id: string;
   title: string;
   content: string;
   author: {
-    id: string;
-    email: string | null;
-    name: string;
+    email: string;
   };
-  createdAt: string | Timestamp;
+  createdAt: Timestamp;
   views: number;
   fileUrl?: string;
   fileName?: string;
@@ -46,18 +42,18 @@ const Posts = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPosts = async () => {
       try {
         const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
         const querySnapshot = await getDocs(q);
-        const postsData = querySnapshot.docs.map(doc => ({
+        const fetchedPosts = querySnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         })) as Post[];
-        setPosts(postsData);
+        setPosts(fetchedPosts);
       } catch (error) {
         console.error('Error fetching posts:', error);
         setError('게시글을 불러오는데 실패했습니다.');
@@ -67,31 +63,20 @@ const Posts = () => {
     fetchPosts();
   }, []);
 
-  const handleEdit = (id: string) => {
-    navigate(`/posts/${id}/edit`);
-  };
-
   const handleDelete = async (id: string) => {
-    if (window.confirm('정말로 이 게시글을 삭제하시겠습니까?')) {
+    if (!window.confirm('정말로 이 게시글을 삭제하시겠습니까?')) return;
+
+    try {
       await deleteDoc(doc(db, 'posts', id));
       setPosts(posts.filter(post => post.id !== id));
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      setError('게시글 삭제에 실패했습니다.');
     }
   };
 
-  const handleRowClick = (id: string) => {
-    navigate(`/posts/${id}`);
-  };
-
-  const handleAddTestData = async () => {
-    await addTestPosts();
-    window.location.reload();
-  };
-
-  const formatDate = (date: string | Timestamp) => {
-    if (date instanceof Timestamp) {
-      return date.toDate().toLocaleDateString('ko-KR');
-    }
-    return new Date(date).toLocaleDateString('ko-KR');
+  const formatDate = (date: Timestamp) => {
+    return date.toDate().toLocaleDateString('ko-KR');
   };
 
   if (error) {
@@ -111,21 +96,13 @@ const Posts = () => {
           </Typography>
           <Box sx={{ display: 'flex', gap: 2 }}>
             {currentUser?.role === 'admin' && (
-              <>
-                <Button
-                  variant="outlined"
-                  onClick={handleAddTestData}
-                >
-                  테스트 데이터 추가
-                </Button>
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  onClick={() => navigate('/posts/new')}
-                >
-                  새 글 작성
-                </Button>
-              </>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => navigate('/notice/new')}
+              >
+                새 글 작성
+              </Button>
             )}
           </Box>
         </Box>
@@ -144,10 +121,10 @@ const Posts = () => {
             </TableHead>
             <TableBody>
               {posts.map((post) => (
-                <TableRow 
+                <TableRow
                   key={post.id}
                   hover
-                  onClick={() => handleRowClick(post.id)}
+                  onClick={() => navigate(`/notice/${post.id}`)}
                   sx={{ cursor: 'pointer' }}
                 >
                   <TableCell>
@@ -158,20 +135,23 @@ const Posts = () => {
                       )}
                     </Box>
                   </TableCell>
-                  <TableCell align="center">{maskUserId(post.author?.email || null)}</TableCell>
+                  <TableCell align="center">{maskUserId(post.author.email)}</TableCell>
                   <TableCell align="center">{formatDate(post.createdAt)}</TableCell>
-                  <TableCell align="center">{post.views || 0}</TableCell>
+                  <TableCell align="center">{post.views}</TableCell>
                   {currentUser?.role === 'admin' && (
                     <TableCell align="center">
-                      <IconButton 
+                      <IconButton
+                        size="small"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleEdit(post.id);
+                          navigate(`/notice/${post.id}/edit`);
                         }}
                       >
                         <EditIcon />
                       </IconButton>
                       <IconButton
+                        size="small"
+                        color="error"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDelete(post.id);
@@ -185,7 +165,10 @@ const Posts = () => {
               ))}
               {posts.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} align="center">
+                  <TableCell 
+                    colSpan={currentUser?.role === 'admin' ? 5 : 4} 
+                    align="center"
+                  >
                     게시글이 없습니다.
                   </TableCell>
                 </TableRow>

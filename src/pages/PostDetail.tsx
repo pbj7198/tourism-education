@@ -1,20 +1,25 @@
-import { Container, Box, Typography, Paper, Divider, IconButton, TextField, Button, Avatar } from '@mui/material';
+import { Container, Box, Typography, Paper, Divider, IconButton, TextField, Button, Avatar, Alert } from '@mui/material';
 import PageTransition from '../components/PageTransition';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { doc, getDoc, updateDoc, collection, addDoc, onSnapshot, query, orderBy, increment } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, addDoc, onSnapshot, query, orderBy, increment, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { maskUserId } from '../utils/maskUserId';
 
 interface Post {
   title: string;
   content: string;
-  author: string;
-  createdAt: string;
+  author: {
+    email: string;
+  };
+  createdAt: Timestamp;
   views: number;
   isNotice?: boolean;
+  fileUrl?: string;
+  fileName?: string;
 }
 
 interface Comment {
@@ -80,7 +85,7 @@ const PostDetail = () => {
   }, [id]);
 
   const handleEdit = () => {
-    navigate(`/posts/${id}/edit`);
+    navigate(`/notice/${id}/edit`);
   };
 
   const handleDelete = async () => {
@@ -124,6 +129,10 @@ const PostDetail = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const formatDate = (date: Timestamp) => {
+    return date.toDate().toLocaleDateString('ko-KR');
   };
 
   if (!post) return null;
@@ -172,9 +181,9 @@ const PostDetail = () => {
                 fontSize: '0.9rem'
               }}
             >
-              <Box>작성자: {post.author}</Box>
+              <Box>작성자: {maskUserId(post.author.email)}</Box>
               <Divider orientation="vertical" flexItem />
-              <Box>작성일: {post.createdAt}</Box>
+              <Box>작성일: {formatDate(post.createdAt)}</Box>
               <Divider orientation="vertical" flexItem />
               <Box>조회수: {post.views}</Box>
             </Box>
@@ -182,17 +191,26 @@ const PostDetail = () => {
 
           {/* 게시글 본문 */}
           <Box sx={{ mb: 6 }}>
-            <Typography 
-              sx={{ 
-                fontSize: '1.1rem',
-                color: '#444',
-                lineHeight: 1.8,
-                whiteSpace: 'pre-line'
-              }}
-            >
-              {post.content}
-            </Typography>
+            <div dangerouslySetInnerHTML={{ __html: post.content }} />
           </Box>
+
+          {/* 첨부파일 */}
+          {post.fileUrl && post.fileName && (
+            <Box sx={{ mb: 4, pt: 3, borderTop: '1px solid #e0e0e0' }}>
+              <Button
+                onClick={() => {
+                  const link = document.createElement('a');
+                  link.href = post.fileUrl!;
+                  link.download = post.fileName!;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }}
+              >
+                {post.fileName}
+              </Button>
+            </Box>
+          )}
 
           {/* 댓글 섹션 */}
           <Box sx={{ mt: 6, pt: 4, borderTop: '1px solid #e0e0e0' }}>
@@ -201,7 +219,7 @@ const PostDetail = () => {
             </Typography>
 
             {/* 댓글 작성 폼 */}
-            {currentUser && (
+            {currentUser ? (
               <Box component="form" onSubmit={handleCommentSubmit} sx={{ mb: 4 }}>
                 <TextField
                   fullWidth
@@ -222,6 +240,10 @@ const PostDetail = () => {
                   </Button>
                 </Box>
               </Box>
+            ) : (
+              <Alert severity="info" sx={{ mb: 3 }}>
+                댓글을 작성하려면 로그인이 필요합니다.
+              </Alert>
             )}
 
             {/* 댓글 목록 */}
@@ -246,6 +268,11 @@ const PostDetail = () => {
                   </Box>
                 </Box>
               ))}
+              {comments.length === 0 && (
+                <Typography color="text.secondary" align="center">
+                  아직 댓글이 없습니다.
+                </Typography>
+              )}
             </Box>
           </Box>
         </Paper>
