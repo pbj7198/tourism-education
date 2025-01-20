@@ -18,6 +18,12 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  useTheme,
+  useMediaQuery,
+  List,
+  ListItem,
+  ListItemText,
+  Divider,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -51,6 +57,8 @@ const TeachingMaterials = () => {
   const [error, setError] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState<MaterialPost | null>(null);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -89,13 +97,180 @@ const TeachingMaterials = () => {
     }
   };
 
-  const handleDownload = (fileUrl: string) => {
+  const handleDownload = (fileUrl: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     window.open(fileUrl, '_blank');
   };
 
   const formatDate = (date: Timestamp) => {
     return date.toDate().toLocaleDateString('ko-KR');
   };
+
+  const renderMobileList = () => (
+    <List sx={{ width: '100%', bgcolor: 'background.paper' }}>
+      {posts.map((post) => (
+        <Box key={post.id}>
+          <ListItem
+            alignItems="flex-start"
+            onClick={() => navigate(`/materials/${post.id}`)}
+            sx={{ 
+              cursor: 'pointer',
+              '&:hover': {
+                backgroundColor: '#f5f5f5',
+              },
+            }}
+          >
+            <ListItemText
+              primary={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography
+                    component="span"
+                    sx={{
+                      fontSize: '0.95rem',
+                    }}
+                  >
+                    {post.title}
+                  </Typography>
+                  {post.fileUrl && (
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleDownload(post.fileUrl!, e)}
+                    >
+                      <CloudDownloadIcon fontSize="small" color="primary" />
+                    </IconButton>
+                  )}
+                </Box>
+              }
+              secondary={
+                <Box sx={{ mt: 1 }}>
+                  <Typography
+                    component="span"
+                    variant="body2"
+                    color="text.secondary"
+                  >
+                    {maskUserId(post.author?.email || null)} | {formatDate(post.createdAt)} | 조회 {post.views || 0}
+                  </Typography>
+                  {currentUser?.role === 'admin' && (
+                    <Box sx={{ mt: 1 }}>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEdit(post);
+                        }}
+                        sx={{ mr: 1 }}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedPost(post);
+                          setDeleteDialogOpen(true);
+                        }}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  )}
+                </Box>
+              }
+            />
+          </ListItem>
+          <Divider component="li" />
+        </Box>
+      ))}
+      {posts.length === 0 && (
+        <ListItem>
+          <ListItemText
+            primary={
+              <Typography align="center" color="text.secondary">
+                게시글이 없습니다.
+              </Typography>
+            }
+          />
+        </ListItem>
+      )}
+    </List>
+  );
+
+  const renderDesktopTable = () => (
+    <TableContainer component={Paper} elevation={0}>
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableCell>제목</TableCell>
+            <TableCell align="center" width={150}>작성자</TableCell>
+            <TableCell align="center" width={150}>작성일</TableCell>
+            <TableCell align="center" width={100}>조회수</TableCell>
+            <TableCell align="center" width={100}>첨부파일</TableCell>
+            {currentUser?.role === 'admin' && (
+              <TableCell align="center" width={120}>관리</TableCell>
+            )}
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {posts.map((post) => (
+            <TableRow
+              key={post.id}
+              hover
+              onClick={() => navigate(`/materials/${post.id}`)}
+              sx={{ cursor: 'pointer' }}
+            >
+              <TableCell>{post.title}</TableCell>
+              <TableCell align="center">{maskUserId(post.author?.email || null)}</TableCell>
+              <TableCell align="center">{formatDate(post.createdAt)}</TableCell>
+              <TableCell align="center">{post.views || 0}</TableCell>
+              <TableCell align="center">
+                {post.fileUrl && (
+                  <IconButton
+                    size="small"
+                    onClick={(e) => handleDownload(post.fileUrl!, e)}
+                  >
+                    <CloudDownloadIcon />
+                  </IconButton>
+                )}
+              </TableCell>
+              {currentUser?.role === 'admin' && (
+                <TableCell align="center">
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEdit(post);
+                    }}
+                    sx={{ mr: 1 }}
+                  >
+                    <EditIcon />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedPost(post);
+                      setDeleteDialogOpen(true);
+                    }}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </TableCell>
+              )}
+            </TableRow>
+          ))}
+          {posts.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={currentUser?.role === 'admin' ? 6 : 5} align="center">
+                게시글이 없습니다.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
 
   return (
     <PageTransition>
@@ -121,84 +296,10 @@ const TeachingMaterials = () => {
           </Alert>
         )}
 
-        <TableContainer component={Paper} elevation={0}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>제목</TableCell>
-                <TableCell align="center" width={150}>작성자</TableCell>
-                <TableCell align="center" width={150}>작성일</TableCell>
-                <TableCell align="center" width={100}>조회수</TableCell>
-                <TableCell align="center" width={100}>첨부파일</TableCell>
-                {currentUser?.role === 'admin' && (
-                  <TableCell align="center" width={120}>관리</TableCell>
-                )}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {posts.map((post) => (
-                <TableRow
-                  key={post.id}
-                  hover
-                  onClick={() => navigate(`/materials/${post.id}`)}
-                  sx={{ cursor: 'pointer' }}
-                >
-                  <TableCell>{post.title}</TableCell>
-                  <TableCell align="center">{maskUserId(post.author?.email || null)}</TableCell>
-                  <TableCell align="center">{formatDate(post.createdAt)}</TableCell>
-                  <TableCell align="center">{post.views || 0}</TableCell>
-                  <TableCell align="center">
-                    {post.fileUrl && (
-                      <IconButton
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDownload(post.fileUrl!);
-                        }}
-                      >
-                        <CloudDownloadIcon />
-                      </IconButton>
-                    )}
-                  </TableCell>
-                  {currentUser?.role === 'admin' && (
-                    <TableCell align="center">
-                      <IconButton
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEdit(post);
-                        }}
-                        sx={{ mr: 1 }}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedPost(post);
-                          setDeleteDialogOpen(true);
-                        }}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </TableCell>
-                  )}
-                </TableRow>
-              ))}
-              {posts.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={currentUser?.role === 'admin' ? 6 : 5} align="center">
-                    게시글이 없습니다.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        <Paper elevation={0} sx={{ borderRadius: '12px', overflow: 'hidden' }}>
+          {isMobile ? renderMobileList() : renderDesktopTable()}
+        </Paper>
 
-        {/* 삭제 확인 다이얼로그 */}
         <Dialog
           open={deleteDialogOpen}
           onClose={() => setDeleteDialogOpen(false)}
