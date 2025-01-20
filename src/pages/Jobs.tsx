@@ -13,23 +13,27 @@ import {
   TableRow,
   Box,
   Alert,
-  Chip,
   IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
+  useTheme,
+  useMediaQuery,
+  List,
+  ListItem,
+  ListItemText,
+  Divider,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
-import { collection, query, orderBy, onSnapshot, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, deleteDoc, doc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
 import { maskUserId } from '../utils/maskUserId';
-import { Timestamp } from 'firebase/firestore';
 
 interface JobPost {
   id: string;
@@ -42,7 +46,7 @@ interface JobPost {
   };
   createdAt: string | Timestamp;
   views: number;
-  isNotice?: boolean; // 공지사항 여부
+  isNotice?: boolean;
   fileUrl?: string;
   fileName?: string;
 }
@@ -54,6 +58,8 @@ const Jobs = () => {
   const [error, setError] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState<JobPost | null>(null);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -65,12 +71,10 @@ const Jobs = () => {
           ...doc.data()
         })) as JobPost[];
         
-        // 클라이언트 측에서 정렬
         const sortedPosts = postsData.sort((a, b) => {
           if (a.isNotice && !b.isNotice) return -1;
           if (!a.isNotice && b.isNotice) return 1;
           
-          // 같은 카테고리 내에서는 최신순 정렬
           const dateA = a.createdAt instanceof Timestamp ? a.createdAt.toDate() : new Date(a.createdAt);
           const dateB = b.createdAt instanceof Timestamp ? b.createdAt.toDate() : new Date(b.createdAt);
           return dateB.getTime() - dateA.getTime();
@@ -111,13 +115,190 @@ const Jobs = () => {
     }
   };
 
-  if (error) {
-    return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Alert severity="error">{error}</Alert>
-      </Container>
-    );
-  }
+  const renderMobileList = () => (
+    <List sx={{ width: '100%', bgcolor: 'background.paper' }}>
+      {posts.map((post) => (
+        <Box key={post.id}>
+          <ListItem
+            alignItems="flex-start"
+            onClick={() => navigate(`/jobs/${post.id}`)}
+            sx={{ 
+              cursor: 'pointer',
+              backgroundColor: post.isNotice ? '#f5f5f5' : 'inherit',
+              '&:hover': {
+                backgroundColor: '#f5f5f5',
+              },
+            }}
+          >
+            <ListItemText
+              primary={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  {post.isNotice && (
+                    <Typography
+                      component="span"
+                      sx={{
+                        color: 'error.main',
+                        fontWeight: 600,
+                        fontSize: '0.875rem',
+                      }}
+                    >
+                      [공지]
+                    </Typography>
+                  )}
+                  <Typography
+                    component="span"
+                    sx={{
+                      fontWeight: post.isNotice ? 600 : 400,
+                      fontSize: '0.95rem',
+                    }}
+                  >
+                    {post.title}
+                  </Typography>
+                  {post.fileUrl && <AttachFileIcon fontSize="small" color="action" />}
+                </Box>
+              }
+              secondary={
+                <Box sx={{ mt: 1 }}>
+                  <Typography
+                    component="span"
+                    variant="body2"
+                    color="text.secondary"
+                  >
+                    {maskUserId(post.author?.email || null)} | {formatDate(post.createdAt)} | 조회 {post.views || 0}
+                  </Typography>
+                  {currentUser?.role === 'admin' && (
+                    <Box sx={{ mt: 1 }}>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEdit(post);
+                        }}
+                        sx={{ mr: 1 }}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedPost(post);
+                          setDeleteDialogOpen(true);
+                        }}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  )}
+                </Box>
+              }
+            />
+          </ListItem>
+          <Divider component="li" />
+        </Box>
+      ))}
+      {posts.length === 0 && (
+        <ListItem>
+          <ListItemText
+            primary={
+              <Typography align="center" color="text.secondary">
+                게시글이 없습니다.
+              </Typography>
+            }
+          />
+        </ListItem>
+      )}
+    </List>
+  );
+
+  const renderDesktopTable = () => (
+    <TableContainer component={Paper} elevation={0}>
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableCell>제목</TableCell>
+            <TableCell align="center" width={150}>작성자</TableCell>
+            <TableCell align="center" width={150}>작성일</TableCell>
+            <TableCell align="center" width={100}>조회수</TableCell>
+            {currentUser?.role === 'admin' && (
+              <TableCell align="center" width={120}>관리</TableCell>
+            )}
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {posts.map((post) => (
+            <TableRow
+              key={post.id}
+              hover
+              onClick={() => navigate(`/jobs/${post.id}`)}
+              sx={{ 
+                cursor: 'pointer',
+                backgroundColor: post.isNotice ? '#f5f5f5' : 'inherit'
+              }}
+            >
+              <TableCell>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  {post.isNotice && (
+                    <Typography
+                      component="span"
+                      sx={{
+                        color: 'error.main',
+                        fontWeight: 600,
+                        fontSize: '0.875rem',
+                        mr: 1
+                      }}
+                    >
+                      [공지]
+                    </Typography>
+                  )}
+                  {post.title}
+                  {post.fileUrl && (
+                    <AttachFileIcon fontSize="small" color="action" />
+                  )}
+                </Box>
+              </TableCell>
+              <TableCell align="center">{maskUserId(post.author?.email || null)}</TableCell>
+              <TableCell align="center">{formatDate(post.createdAt)}</TableCell>
+              <TableCell align="center">{post.views || 0}</TableCell>
+              {currentUser?.role === 'admin' && (
+                <TableCell align="center">
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEdit(post);
+                    }}
+                    sx={{ mr: 1 }}
+                  >
+                    <EditIcon />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedPost(post);
+                      setDeleteDialogOpen(true);
+                    }}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </TableCell>
+              )}
+            </TableRow>
+          ))}
+          {posts.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={currentUser?.role === 'admin' ? 5 : 4} align="center">
+                게시글이 없습니다.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
 
   return (
     <PageTransition>
@@ -137,93 +318,16 @@ const Jobs = () => {
           )}
         </Box>
 
-        <TableContainer component={Paper} elevation={0}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>제목</TableCell>
-                <TableCell align="center" width={150}>작성자</TableCell>
-                <TableCell align="center" width={150}>작성일</TableCell>
-                <TableCell align="center" width={100}>조회수</TableCell>
-                {currentUser?.role === 'admin' && (
-                  <TableCell align="center" width={120}>관리</TableCell>
-                )}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {posts.map((post) => (
-                <TableRow
-                  key={post.id}
-                  hover
-                  onClick={() => navigate(`/jobs/${post.id}`)}
-                  sx={{ 
-                    cursor: 'pointer',
-                    backgroundColor: post.isNotice ? '#f5f5f5' : 'inherit'
-                  }}
-                >
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      {post.isNotice && (
-                        <Typography
-                          component="span"
-                          sx={{
-                            color: 'error.main',
-                            fontWeight: 600,
-                            fontSize: '0.875rem',
-                            mr: 1
-                          }}
-                        >
-                          [공지]
-                        </Typography>
-                      )}
-                      {post.title}
-                      {post.fileUrl && (
-                        <AttachFileIcon fontSize="small" color="action" />
-                      )}
-                    </Box>
-                  </TableCell>
-                  <TableCell align="center">{maskUserId(post.author?.email || null)}</TableCell>
-                  <TableCell align="center">{formatDate(post.createdAt)}</TableCell>
-                  <TableCell align="center">{post.views || 0}</TableCell>
-                  {currentUser?.role === 'admin' && (
-                    <TableCell align="center">
-                      <IconButton
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEdit(post);
-                        }}
-                        sx={{ mr: 1 }}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedPost(post);
-                          setDeleteDialogOpen(true);
-                        }}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </TableCell>
-                  )}
-                </TableRow>
-              ))}
-              {posts.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={currentUser?.role === 'admin' ? 5 : 4} align="center">
-                    게시글이 없습니다.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        )}
 
-        {/* 삭제 확인 다이얼로그 */}
+        <Paper elevation={0} sx={{ borderRadius: '12px', overflow: 'hidden' }}>
+          {isMobile ? renderMobileList() : renderDesktopTable()}
+        </Paper>
+
         <Dialog
           open={deleteDialogOpen}
           onClose={() => setDeleteDialogOpen(false)}
