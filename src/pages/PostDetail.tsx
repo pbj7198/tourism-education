@@ -110,10 +110,9 @@ const PostDetail = () => {
       setIsSubmitting(true);
       const newCommentDoc = {
         content: newComment,
-        author: currentUser.name,
-        createdAt: new Date().toISOString(),
-        userId: currentUser.id,
-        postId: id || ''
+        author: currentUser.email?.split('@')[0] || '익명',
+        authorId: currentUser.email || '',
+        createdAt: new Date().toISOString()
       };
 
       if (!id) {
