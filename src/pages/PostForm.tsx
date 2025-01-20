@@ -18,11 +18,14 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
+import RichTextEditor from '../components/RichTextEditor';
+import type { Editor } from '@tinymce/tinymce-react';
 
 const PostForm = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const editorRef = useRef<Editor>(null);
   
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -30,9 +33,14 @@ const PostForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  if (!currentUser) {
-    navigate('/notice');
-    return null;
+  if (!currentUser || currentUser.role !== 'admin') {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Alert severity="error">
+          관리자만 접근할 수 있는 페이지입니다.
+        </Alert>
+      </Container>
+    );
   }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -50,11 +58,7 @@ const PostForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser) {
-      setError('로그인이 필요합니다.');
-      return;
-    }
-
+    
     if (!title.trim() || !content.trim()) {
       setError('제목과 내용을 모두 입력해주세요.');
       return;
@@ -62,12 +66,13 @@ const PostForm = () => {
 
     try {
       setIsSubmitting(true);
-      
+      setError('');
+
       let fileUrl = '';
       let fileName = '';
 
       if (file) {
-        const fileRef = ref(storage, `gs://tourism-education.firebasestorage.app/notice_files/${Date.now()}_${file.name}`);
+        const fileRef = ref(storage, `posts/${Date.now()}_${file.name}`);
         await uploadBytes(fileRef, file);
         fileUrl = await getDownloadURL(fileRef);
         fileName = file.name;
@@ -86,10 +91,11 @@ const PostForm = () => {
         fileUrl,
         fileName
       });
+
       navigate(`/notice/${docRef.id}`);
     } catch (error) {
-      console.error('Error creating post:', error);
-      setError('게시글 등록에 실패했습니다.');
+      console.error('게시글 작성 중 오류:', error);
+      setError('게시글 작성에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setIsSubmitting(false);
     }
@@ -104,7 +110,7 @@ const PostForm = () => {
           </Typography>
 
           {error && (
-            <Alert severity="error" sx={{ mb: 4 }}>
+            <Alert severity="error" sx={{ mb: 3 }}>
               {error}
             </Alert>
           )}
@@ -118,15 +124,14 @@ const PostForm = () => {
               sx={{ mb: 3 }}
             />
 
-            <TextField
-              fullWidth
-              multiline
-              rows={15}
-              label="내용"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              sx={{ mb: 3 }}
-            />
+            <Box sx={{ mt: 3, mb: 3 }}>
+              <RichTextEditor
+                ref={editorRef}
+                value={content}
+                onChange={setContent}
+                placeholder="내용을 입력하세요..."
+              />
+            </Box>
 
             <Box sx={{ mt: 3, mb: 2 }}>
               <input

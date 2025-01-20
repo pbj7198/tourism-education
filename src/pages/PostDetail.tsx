@@ -4,24 +4,17 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { doc, getDoc, updateDoc, collection, addDoc, onSnapshot, query, orderBy, increment, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, addDoc, onSnapshot, query, orderBy, increment } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 
 interface Post {
-  id: string;
   title: string;
   content: string;
-  author: {
-    id: string;
-    email: string | null;
-    name: string;
-  };
-  createdAt: string | Timestamp;
+  author: string;
+  createdAt: string;
   views: number;
-  fileUrl?: string;
-  fileName?: string;
+  isNotice?: boolean;
 }
 
 interface Comment {
@@ -42,13 +35,6 @@ const PostDetail = () => {
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const formatDate = (date: string | Timestamp) => {
-    if (date instanceof Timestamp) {
-      return date.toDate().toLocaleDateString('ko-KR');
-    }
-    return new Date(date).toLocaleDateString('ko-KR');
-  };
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -186,39 +172,27 @@ const PostDetail = () => {
                 fontSize: '0.9rem'
               }}
             >
-              <Box>작성자: {post.author.name}</Box>
+              <Box>작성자: {post.author}</Box>
               <Divider orientation="vertical" flexItem />
-              <Box>작성일: {formatDate(post.createdAt)}</Box>
+              <Box>작성일: {post.createdAt}</Box>
               <Divider orientation="vertical" flexItem />
-              <Box>조회수: {post.views || 0}</Box>
+              <Box>조회수: {post.views}</Box>
             </Box>
           </Box>
 
           {/* 게시글 본문 */}
-          <Box sx={{ mb: 4, minHeight: '200px', whiteSpace: 'pre-wrap' }}>
-            {post.content}
+          <Box sx={{ mb: 6 }}>
+            <Typography 
+              sx={{ 
+                fontSize: '1.1rem',
+                color: '#444',
+                lineHeight: 1.8,
+                whiteSpace: 'pre-line'
+              }}
+            >
+              {post.content}
+            </Typography>
           </Box>
-
-          {/* 첨부파일 */}
-          {post.fileUrl && post.fileName && (
-            <Box sx={{ mb: 4, pt: 3, borderTop: '1px solid #e0e0e0' }}>
-              <Button
-                startIcon={<CloudDownloadIcon />}
-                onClick={() => {
-                  if (post.fileUrl && post.fileName) {
-                    const link = document.createElement('a');
-                    link.href = post.fileUrl;
-                    link.download = post.fileName;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                  }
-                }}
-              >
-                {post.fileName}
-              </Button>
-            </Box>
-          )}
 
           {/* 댓글 섹션 */}
           <Box sx={{ mt: 6, pt: 4, borderTop: '1px solid #e0e0e0' }}>
