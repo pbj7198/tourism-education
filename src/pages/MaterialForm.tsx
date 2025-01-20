@@ -72,7 +72,7 @@ const MaterialForm = () => {
       let fileName = '';
 
       if (file) {
-        const fileRef = ref(storage, `teaching_materials/${Date.now()}_${file.name}`);
+        const fileRef = ref(storage, `materials/${Date.now()}_${file.name}`);
         await uploadBytes(fileRef, file);
         fileUrl = await getDownloadURL(fileRef);
         fileName = file.name;

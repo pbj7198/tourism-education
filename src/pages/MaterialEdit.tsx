@@ -126,7 +126,7 @@ const MaterialEdit = () => {
       let fileName = currentFileName;
 
       if (file) {
-        const fileRef = ref(storage, `teaching_materials/${Date.now()}_${file.name}`);
+        const fileRef = ref(storage, `materials/${Date.now()}_${file.name}`);
         await uploadBytes(fileRef, file);
         fileUrl = await getDownloadURL(fileRef);
         fileName = file.name;

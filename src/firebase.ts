@@ -15,11 +15,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 // Firebase 서비스 초기화
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 // Storage 설정
-const storage = getStorage(app);
+const storage = getStorage(app, 'gs://tourism-education.firebasestorage.app');
 
-export { storage };
+export { auth, db, storage };
 export default app; 
