@@ -5,7 +5,10 @@ import { resolve } from 'path'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/',
+  server: {
+    middleware: true
+  },
+  base: './',
   publicDir: 'public',
   define: {
     'process.env.PUBLIC_URL': '""',
