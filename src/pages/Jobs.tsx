@@ -24,6 +24,8 @@ import {
   ListItem,
   ListItemText,
   Divider,
+  Pagination,
+  Stack
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -51,6 +53,8 @@ interface JobPost {
   fileName?: string;
 }
 
+const ITEMS_PER_PAGE = 10;
+
 const Jobs = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
@@ -60,6 +64,7 @@ const Jobs = () => {
   const [selectedPost, setSelectedPost] = useState<JobPost | null>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -115,16 +120,35 @@ const Jobs = () => {
     }
   };
 
+  // 공지사항을 먼저 보여주고, 나머지 게시글은 날짜순으로 정렬
+  const sortedPosts = [...posts].sort((a, b) => {
+    if (a.isNotice && !b.isNotice) return -1;
+    if (!a.isNotice && b.isNotice) return 1;
+    return b.createdAt.seconds - a.createdAt.seconds;
+  });
+
+  // 현재 페이지에 해당하는 게시글만 선택
+  const currentPosts = sortedPosts.slice(
+    (page - 1) * ITEMS_PER_PAGE,
+    page * ITEMS_PER_PAGE
+  );
+
+  const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
+    setPage(value);
+    window.scrollTo(0, 0);
+  };
+
+  const pageCount = Math.ceil(posts.length / ITEMS_PER_PAGE);
+
   const renderMobileList = () => (
     <List sx={{ width: '100%', bgcolor: 'background.paper' }}>
-      {posts.map((post) => (
+      {currentPosts.map((post) => (
         <Box key={post.id}>
           <ListItem
             alignItems="flex-start"
             onClick={() => navigate(`/jobs/${post.id}`)}
             sx={{ 
               cursor: 'pointer',
-              backgroundColor: post.isNotice ? '#f5f5f5' : 'inherit',
               '&:hover': {
                 backgroundColor: '#f5f5f5',
               },
@@ -132,19 +156,12 @@ const Jobs = () => {
           >
             <ListItemText
               primary={
-                <Box sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 1,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis'
-                }}>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
                   {post.isNotice && (
                     <Typography
                       component="span"
+                      color="primary.main"
                       sx={{
-                        color: 'primary.main',
                         fontWeight: 'bold',
                         flexShrink: 0
                       }}
@@ -155,14 +172,14 @@ const Jobs = () => {
                   <Typography
                     component="span"
                     sx={{
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap'
+                      fontSize: '0.95rem',
+                      wordBreak: 'break-all',
+                      whiteSpace: 'pre-wrap'
                     }}
                   >
                     {post.title}
                   </Typography>
-                  {post.fileUrl && <AttachFileIcon fontSize="small" color="action" />}
+                  {post.fileUrl && <AttachFileIcon fontSize="small" color="action" sx={{ flexShrink: 0 }} />}
                 </Box>
               }
               secondary={
@@ -235,7 +252,7 @@ const Jobs = () => {
           </TableRow>
         </TableHead>
         <TableBody>
-          {posts.map((post) => (
+          {currentPosts.map((post) => (
             <TableRow
               key={post.id}
               hover
@@ -246,23 +263,31 @@ const Jobs = () => {
               }}
             >
               <TableCell>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
                   {post.isNotice && (
                     <Typography
                       component="span"
+                      color="primary.main"
                       sx={{
-                        color: 'error.main',
-                        fontWeight: 600,
-                        fontSize: '0.875rem',
-                        mr: 1
+                        fontWeight: 'bold',
+                        flexShrink: 0
                       }}
                     >
                       [공지]
                     </Typography>
                   )}
-                  {post.title}
+                  <Typography
+                    component="span"
+                    sx={{
+                      fontSize: '0.95rem',
+                      wordBreak: 'break-all',
+                      whiteSpace: 'pre-wrap'
+                    }}
+                  >
+                    {post.title}
+                  </Typography>
                   {post.fileUrl && (
-                    <AttachFileIcon fontSize="small" color="action" />
+                    <AttachFileIcon fontSize="small" color="action" sx={{ flexShrink: 0 }} />
                   )}
                 </Box>
               </TableCell>
@@ -315,15 +340,17 @@ const Jobs = () => {
           <Typography variant="h4" component="h1">
             관광교사 채용소식
           </Typography>
-          {currentUser && (
-            <Button
-              variant="contained"
-              onClick={() => navigate('/jobs/new')}
-              startIcon={<AddIcon />}
-            >
-              새 글 작성
-            </Button>
-          )}
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            {currentUser?.role === 'admin' && (
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => navigate('/jobs/new')}
+              >
+                새 글 작성
+              </Button>
+            )}
+          </Box>
         </Box>
 
         {error && (
@@ -335,6 +362,20 @@ const Jobs = () => {
         <Paper elevation={0} sx={{ borderRadius: '12px', overflow: 'hidden' }}>
           {isMobile ? renderMobileList() : renderDesktopTable()}
         </Paper>
+
+        {posts.length > 0 && (
+          <Stack spacing={2} sx={{ mt: 3, alignItems: 'center' }}>
+            <Pagination 
+              count={pageCount} 
+              page={page} 
+              onChange={handlePageChange}
+              color="primary"
+              size={isMobile ? "small" : "medium"}
+              showFirstButton 
+              showLastButton
+            />
+          </Stack>
+        )}
 
         <Dialog
           open={deleteDialogOpen}

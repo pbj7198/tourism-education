@@ -24,6 +24,8 @@ import {
   ListItem,
   ListItemText,
   Divider,
+  Pagination,
+  Stack
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -50,6 +52,8 @@ interface MaterialPost {
   fileName?: string;
 }
 
+const ITEMS_PER_PAGE = 10;
+
 const TeachingMaterials = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
@@ -57,6 +61,7 @@ const TeachingMaterials = () => {
   const [error, setError] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState<MaterialPost | null>(null);
+  const [page, setPage] = useState(1);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -106,9 +111,21 @@ const TeachingMaterials = () => {
     return date.toDate().toLocaleDateString('ko-KR');
   };
 
+  const currentPosts = posts.slice(
+    (page - 1) * ITEMS_PER_PAGE,
+    page * ITEMS_PER_PAGE
+  );
+
+  const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
+    setPage(value);
+    window.scrollTo(0, 0);
+  };
+
+  const pageCount = Math.ceil(posts.length / ITEMS_PER_PAGE);
+
   const renderMobileList = () => (
     <List sx={{ width: '100%', bgcolor: 'background.paper' }}>
-      {posts.map((post) => (
+      {currentPosts.map((post) => (
         <Box key={post.id}>
           <ListItem
             alignItems="flex-start"
@@ -212,7 +229,7 @@ const TeachingMaterials = () => {
           </TableRow>
         </TableHead>
         <TableBody>
-          {posts.map((post) => (
+          {currentPosts.map((post) => (
             <TableRow
               key={post.id}
               hover
@@ -299,6 +316,20 @@ const TeachingMaterials = () => {
         <Paper elevation={0} sx={{ borderRadius: '12px', overflow: 'hidden' }}>
           {isMobile ? renderMobileList() : renderDesktopTable()}
         </Paper>
+
+        {posts.length > 0 && (
+          <Stack spacing={2} sx={{ mt: 3, alignItems: 'center' }}>
+            <Pagination 
+              count={pageCount} 
+              page={page} 
+              onChange={handlePageChange}
+              color="primary"
+              size={isMobile ? "small" : "medium"}
+              showFirstButton 
+              showLastButton
+            />
+          </Stack>
+        )}
 
         <Dialog
           open={deleteDialogOpen}

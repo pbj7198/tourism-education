@@ -14,6 +14,10 @@ import {
   TableHead,
   TableRow,
   IconButton,
+  Pagination,
+  Stack,
+  useTheme,
+  useMediaQuery
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -38,11 +42,16 @@ interface Post {
   fileName?: string;
 }
 
+const ITEMS_PER_PAGE = 10;
+
 const Posts = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -78,6 +87,19 @@ const Posts = () => {
   const formatDate = (date: Timestamp) => {
     return date.toDate().toLocaleDateString('ko-KR');
   };
+
+  // 현재 페이지에 해당하는 게시글만 선택
+  const currentPosts = posts.slice(
+    (page - 1) * ITEMS_PER_PAGE,
+    page * ITEMS_PER_PAGE
+  );
+
+  const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
+    setPage(value);
+    window.scrollTo(0, 0);
+  };
+
+  const pageCount = Math.ceil(posts.length / ITEMS_PER_PAGE);
 
   if (error) {
     return (
@@ -120,7 +142,7 @@ const Posts = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {posts.map((post) => (
+              {currentPosts.map((post) => (
                 <TableRow
                   key={post.id}
                   hover
@@ -176,6 +198,20 @@ const Posts = () => {
             </TableBody>
           </Table>
         </TableContainer>
+
+        {posts.length > 0 && (
+          <Stack spacing={2} sx={{ mt: 3, alignItems: 'center' }}>
+            <Pagination 
+              count={pageCount} 
+              page={page} 
+              onChange={handlePageChange}
+              color="primary"
+              size={isMobile ? "small" : "medium"}
+              showFirstButton 
+              showLastButton
+            />
+          </Stack>
+        )}
       </Container>
     </PageTransition>
   );
