@@ -24,6 +24,7 @@ const pages = [
   { title: '관광교사 임용자료', path: '/materials' },
   { title: '관광교사 채용소식', path: '/jobs' },
   { title: '관광교사 게시판', path: '/board' },
+  { title: '연구회 활동사진', path: '/gallery' },
   { title: '문의하기', path: '/contact' },
 ];
 
