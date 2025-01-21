@@ -53,6 +53,14 @@ interface Material {
   files: FileData[];
 }
 
+interface Comment {
+  id: string;
+  content: string;
+  author: string;
+  authorId: string;
+  createdAt: string;
+}
+
 const MaterialDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();

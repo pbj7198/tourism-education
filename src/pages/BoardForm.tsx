@@ -24,7 +24,7 @@ import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
 import RichTextEditor from '../components/RichTextEditor';
 import type { Editor } from '@tinymce/tinymce-react';
-import { User } from '@firebase/auth-types';
+import { User } from 'firebase/auth';
 
 interface FileInfo {
   file: File;
@@ -91,6 +91,11 @@ const BoardForm = () => {
       return;
     }
 
+    if (!currentUser) {
+      setError('로그인이 필요한 서비스입니다.');
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       setError('');
@@ -108,14 +113,17 @@ const BoardForm = () => {
         })
       );
 
+      // Firebase 사용자 정보 확인
+      const userInfo = {
+        uid: (currentUser as any).uid || '',
+        email: currentUser.email || '',
+        name: currentUser.email?.split('@')[0] || '익명'
+      };
+
       const docRef = await addDoc(collection(db, 'board_posts'), {
         title,
         content,
-        author: {
-          uid: currentUser?.uid || '',
-          email: currentUser?.email || '',
-          name: currentUser?.email?.split('@')[0] || '익명'
-        },
+        author: userInfo,
         createdAt: serverTimestamp(),
         views: 0,
         files: uploadedFiles
