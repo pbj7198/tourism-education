@@ -290,7 +290,7 @@ const MaterialDetail = () => {
                 <Button
                   variant="outlined"
                   startIcon={<EditIcon />}
-                  onClick={() => navigate(`/materials/edit/${id}`)}
+                  onClick={() => navigate(`/materials/${id}/edit`)}
                 >
                   수정
                 </Button>
