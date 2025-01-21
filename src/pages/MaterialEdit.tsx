@@ -71,7 +71,7 @@ const MaterialEdit = () => {
           const data = docSnap.data() as Material;
           setTitle(data.title);
           setContent(data.content);
-          if (data.files) {
+          if (data.files && Array.isArray(data.files)) {
             setFiles(data.files.map(file => ({
               name: file.name,
               url: file.url

@@ -11,12 +11,16 @@ import {
   IconButton,
   CircularProgress,
   FormControlLabel,
-  Checkbox
+  Checkbox,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
@@ -33,8 +37,16 @@ interface JobPost {
     name: string;
   };
   isNotice: boolean;
-  fileUrl?: string;
-  fileName?: string;
+  files?: {
+    name: string;
+    url: string;
+  }[];
+}
+
+interface FileInfo {
+  file?: File;
+  name: string;
+  url?: string;
 }
 
 const JobPostEdit = () => {
@@ -47,9 +59,7 @@ const JobPostEdit = () => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isNotice, setIsNotice] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
-  const [currentFileUrl, setCurrentFileUrl] = useState('');
-  const [currentFileName, setCurrentFileName] = useState('');
+  const [files, setFiles] = useState<FileInfo[]>([]);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -67,8 +77,12 @@ const JobPostEdit = () => {
           setTitle(data.title);
           setContent(data.content);
           setIsNotice(data.isNotice);
-          if (data.fileUrl) setCurrentFileUrl(data.fileUrl);
-          if (data.fileName) setCurrentFileName(data.fileName);
+          if (data.files && Array.isArray(data.files)) {
+            setFiles(data.files.map(file => ({
+              name: file.name,
+              url: file.url
+            })));
+          }
 
           // 작성자나 관리자만 수정 가능
           if (currentUser?.id !== data.author.id && currentUser?.role !== 'admin') {
@@ -100,17 +114,35 @@ const JobPostEdit = () => {
     );
   }
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const selectedFile = e.target.files[0];
-      // 파일 크기 제한 (50MB)
-      if (selectedFile.size > 50 * 1024 * 1024) {
-        setError('파일 크기는 50MB를 초과할 수 없습니다.');
-        return;
-      }
-      setFile(selectedFile);
-      setError('');
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = event.target.files;
+    if (selectedFiles) {
+      const newFiles = Array.from(selectedFiles).map(file => ({
+        file,
+        name: file.name
+      }));
+      setFiles(prev => [...prev, ...newFiles]);
     }
+    // 파일 선택 후 input 초기화
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveFile = async (index: number) => {
+    const fileToRemove = files[index];
+    
+    // 기존 파일인 경우 Storage에서도 삭제
+    if (fileToRemove.url) {
+      try {
+        const fileRef = ref(storage, fileToRemove.url);
+        await deleteObject(fileRef);
+      } catch (error) {
+        console.error('파일 삭제 중 오류:', error);
+      }
+    }
+    
+    setFiles(files.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -127,23 +159,33 @@ const JobPostEdit = () => {
       setIsSubmitting(true);
       setError('');
 
-      let fileUrl = currentFileUrl;
-      let fileName = currentFileName;
+      // 새로 업로드할 파일들 처리
+      const uploadPromises = files
+        .filter(file => file.file) // 새로 추가된 파일만 필터링
+        .map(async (fileInfo) => {
+          const fileRef = ref(storage, `job_posts/${Date.now()}_${fileInfo.name}`);
+          await uploadBytes(fileRef, fileInfo.file!);
+          const url = await getDownloadURL(fileRef);
+          return {
+            name: fileInfo.name,
+            url: url
+          };
+        });
 
-      if (file) {
-        const fileRef = ref(storage, `job_posts/${Date.now()}_${file.name}`);
-        await uploadBytes(fileRef, file);
-        fileUrl = await getDownloadURL(fileRef);
-        fileName = file.name;
-      }
+      const uploadedFiles = await Promise.all(uploadPromises);
+
+      // 기존 파일과 새로 업로드된 파일 합치기
+      const updatedFiles = [
+        ...files.filter(file => file.url), // 기존 파일
+        ...uploadedFiles // 새로 업로드된 파일
+      ];
 
       const docRef = doc(db, 'job_posts', id);
       await updateDoc(docRef, {
         title,
         content,
         isNotice,
-        fileUrl,
-        fileName,
+        files: updatedFiles,
       });
 
       navigate(`/jobs/${id}`);
@@ -211,8 +253,9 @@ const JobPostEdit = () => {
               <input
                 type="file"
                 ref={fileInputRef}
-                onChange={handleFileSelect}
+                onChange={handleFileChange}
                 style={{ display: 'none' }}
+                multiple
               />
               <Button
                 variant="outlined"
@@ -222,25 +265,28 @@ const JobPostEdit = () => {
               >
                 파일 첨부
               </Button>
-              {(file || currentFileName) && (
-                <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                  <Typography variant="body2" sx={{ mr: 1 }}>
-                    {file ? `${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)` : currentFileName}
-                  </Typography>
-                  <IconButton
-                    size="small"
-                    onClick={() => {
-                      setFile(null);
-                      if (!file) {
-                        setCurrentFileUrl('');
-                        setCurrentFileName('');
-                      }
-                    }}
-                    disabled={isSubmitting}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </Box>
+
+              {files.length > 0 && (
+                <List>
+                  {files.map((file, index) => (
+                    <ListItem key={index}>
+                      <ListItemText 
+                        primary={file.name}
+                        secondary={file.file ? '새 파일' : '기존 파일'}
+                      />
+                      <ListItemSecondaryAction>
+                        <IconButton
+                          edge="end"
+                          aria-label="delete"
+                          onClick={() => handleRemoveFile(index)}
+                          disabled={isSubmitting}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </ListItemSecondaryAction>
+                    </ListItem>
+                  ))}
+                </List>
               )}
             </Box>
 
