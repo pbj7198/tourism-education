@@ -46,7 +46,7 @@ interface JobPost {
     email: string | null;
     name: string;
   };
-  createdAt: string | Timestamp;
+  createdAt: Timestamp;
   views: number;
   isNotice?: boolean;
   fileUrl?: string;
@@ -80,8 +80,8 @@ const Jobs = () => {
           if (a.isNotice && !b.isNotice) return -1;
           if (!a.isNotice && b.isNotice) return 1;
           
-          const dateA = a.createdAt instanceof Timestamp ? a.createdAt.toDate() : new Date(a.createdAt);
-          const dateB = b.createdAt instanceof Timestamp ? b.createdAt.toDate() : new Date(b.createdAt);
+          const dateA = a.createdAt.toDate();
+          const dateB = b.createdAt.toDate();
           return dateB.getTime() - dateA.getTime();
         });
         
@@ -95,11 +95,8 @@ const Jobs = () => {
     fetchPosts();
   }, []);
 
-  const formatDate = (date: string | Timestamp) => {
-    if (date instanceof Timestamp) {
-      return date.toDate().toLocaleDateString('ko-KR');
-    }
-    return new Date(date).toLocaleDateString('ko-KR');
+  const formatDate = (dateValue: Timestamp) => {
+    return dateValue.toDate().toLocaleDateString('ko-KR');
   };
 
   const handleEdit = (post: JobPost) => {
