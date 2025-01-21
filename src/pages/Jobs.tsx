@@ -132,14 +132,21 @@ const Jobs = () => {
           >
             <ListItemText
               primary={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 1,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}>
                   {post.isNotice && (
                     <Typography
                       component="span"
                       sx={{
-                        color: 'error.main',
-                        fontWeight: 600,
-                        fontSize: '0.875rem',
+                        color: 'primary.main',
+                        fontWeight: 'bold',
+                        flexShrink: 0
                       }}
                     >
                       [공지]
@@ -148,8 +155,9 @@ const Jobs = () => {
                   <Typography
                     component="span"
                     sx={{
-                      fontWeight: post.isNotice ? 600 : 400,
-                      fontSize: '0.95rem',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
                     }}
                   >
                     {post.title}
