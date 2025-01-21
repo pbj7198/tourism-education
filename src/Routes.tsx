@@ -22,6 +22,7 @@ import TeachingMaterials from './pages/TeachingMaterials';
 import MaterialForm from './pages/MaterialForm';
 import MaterialDetail from './pages/MaterialDetail';
 import MaterialEdit from './pages/MaterialEdit';
+import Gallery from './pages/Gallery';
 
 const Routes = () => {
   return (
@@ -52,6 +53,7 @@ const Routes = () => {
       <Route path="/materials/new" element={<MaterialForm />} />
       <Route path="/materials/:id" element={<MaterialDetail />} />
       <Route path="/materials/:id/edit" element={<MaterialEdit />} />
+      <Route path="/gallery" element={<Gallery />} />
     </RouterRoutes>
   );
 };

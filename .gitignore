@@ -31,3 +31,5 @@ tourism-education-key.json
 .env.local
 .env.development
 .env.production
+
+development_page

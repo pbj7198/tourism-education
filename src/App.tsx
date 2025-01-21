@@ -1,8 +1,8 @@
 import { Box } from '@mui/material';
-import { HashRouter as Router } from 'react-router-dom';
+import { BrowserRouter as Router } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import theme from './theme';
-import Routes from './Routes';
+import AppRoutes from './Routes';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import { AuthProvider } from './contexts/AuthContext';
@@ -21,7 +21,7 @@ function App() {
           >
             <Header />
             <Box component="main" sx={{ flex: 1 }}>
-              <Routes />
+              <AppRoutes />
             </Box>
             <Footer />
           </Box>
