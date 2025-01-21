@@ -31,11 +31,13 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
 import { collection, query, orderBy, getDocs, deleteDoc, doc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
 import { maskUserId } from '../utils/maskUserId';
+import { formatDate } from '../utils/formatDate';
 
 interface MaterialPost {
   id: string;
@@ -50,6 +52,7 @@ interface MaterialPost {
   views: number;
   fileUrl?: string;
   fileName?: string;
+  files?: { name: string; url: string; }[];
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -107,10 +110,6 @@ const TeachingMaterials = () => {
     window.open(fileUrl, '_blank');
   };
 
-  const formatDate = (date: Timestamp) => {
-    return date.toDate().toLocaleDateString('ko-KR');
-  };
-
   const currentPosts = posts.slice(
     (page - 1) * ITEMS_PER_PAGE,
     page * ITEMS_PER_PAGE
@@ -155,6 +154,18 @@ const TeachingMaterials = () => {
                     >
                       <CloudDownloadIcon fontSize="small" color="primary" />
                     </IconButton>
+                  )}
+                  {post.files && post.files.length > 0 && (
+                    <Box 
+                      component="span" 
+                      sx={{ 
+                        display: 'inline-flex', 
+                        alignItems: 'center',
+                        color: 'text.secondary'
+                      }}
+                    >
+                      <AttachFileIcon fontSize="small" />
+                    </Box>
                   )}
                 </Box>
               }
@@ -248,6 +259,18 @@ const TeachingMaterials = () => {
                   >
                     <CloudDownloadIcon />
                   </IconButton>
+                )}
+                {post.files && post.files.length > 0 && (
+                  <Box 
+                    component="span" 
+                    sx={{ 
+                      display: 'inline-flex', 
+                      alignItems: 'center',
+                      color: 'text.secondary'
+                    }}
+                  >
+                    <AttachFileIcon fontSize="small" />
+                  </Box>
                 )}
               </TableCell>
               {currentUser?.role === 'admin' && (

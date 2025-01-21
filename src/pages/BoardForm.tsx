@@ -9,7 +9,11 @@ import {
   Box,
   Alert,
   IconButton,
-  CircularProgress
+  CircularProgress,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -20,6 +24,17 @@ import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
 import RichTextEditor from '../components/RichTextEditor';
 import type { Editor } from '@tinymce/tinymce-react';
+import { User } from '@firebase/auth-types';
+
+interface FileInfo {
+  file: File;
+  name: string;
+}
+
+interface RichTextEditorProps {
+  value: string;
+  onChange: (content: string) => void;
+}
 
 const BoardForm = () => {
   const navigate = useNavigate();
@@ -29,7 +44,7 @@ const BoardForm = () => {
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<FileInfo[]>([]);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -44,16 +59,28 @@ const BoardForm = () => {
   }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const selectedFile = e.target.files[0];
-      // 파일 크기 제한 (50MB)
-      if (selectedFile.size > 50 * 1024 * 1024) {
-        setError('파일 크기는 50MB를 초과할 수 없습니다.');
+    if (e.target.files) {
+      const selectedFiles = Array.from(e.target.files);
+      const totalSize = selectedFiles.reduce((acc, file) => acc + file.size, 0);
+      
+      // 전체 파일 크기 제한 (50MB)
+      if (totalSize > 50 * 1024 * 1024) {
+        setError('전체 파일 크기는 50MB를 초과할 수 없습니다.');
         return;
       }
-      setFile(selectedFile);
+
+      const newFiles = selectedFiles.map(file => ({
+        file,
+        name: file.name
+      }));
+
+      setFiles(prev => [...prev, ...newFiles]);
       setError('');
     }
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -68,28 +95,30 @@ const BoardForm = () => {
       setIsSubmitting(true);
       setError('');
 
-      let fileUrl = '';
-      let fileName = '';
-
-      if (file) {
-        const fileRef = ref(storage, `board_posts/${Date.now()}_${file.name}`);
-        await uploadBytes(fileRef, file);
-        fileUrl = await getDownloadURL(fileRef);
-        fileName = file.name;
-      }
+      // 여러 파일 업로드 처리
+      const uploadedFiles = await Promise.all(
+        files.map(async (fileInfo) => {
+          const fileRef = ref(storage, `board/${Date.now()}_${fileInfo.name}`);
+          await uploadBytes(fileRef, fileInfo.file);
+          const url = await getDownloadURL(fileRef);
+          return {
+            url,
+            name: fileInfo.name
+          };
+        })
+      );
 
       const docRef = await addDoc(collection(db, 'board_posts'), {
         title,
         content,
         author: {
-          id: currentUser.id,
-          email: currentUser.email,
-          name: currentUser.email?.split('@')[0] || '익명'
+          uid: currentUser?.uid || '',
+          email: currentUser?.email || '',
+          name: currentUser?.email?.split('@')[0] || '익명'
         },
         createdAt: serverTimestamp(),
         views: 0,
-        fileUrl,
-        fileName
+        files: uploadedFiles
       });
 
       navigate(`/board/${docRef.id}`);
@@ -109,34 +138,25 @@ const BoardForm = () => {
             게시글 작성
           </Typography>
 
-          {error && (
-            <Alert severity="error" sx={{ mb: 3 }}>
-              {error}
-            </Alert>
-          )}
-
           <form onSubmit={handleSubmit}>
             <TextField
               fullWidth
               label="제목"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              margin="normal"
-              required
+              sx={{ mb: 3 }}
             />
 
-            <Box sx={{ mt: 3, mb: 3 }}>
-              <RichTextEditor
-                ref={editorRef}
-                value={content}
-                onChange={setContent}
-                placeholder="내용을 입력하세요..."
-              />
-            </Box>
+            <RichTextEditor
+              ref={editorRef}
+              value={content}
+              onChange={setContent}
+            />
 
             <Box sx={{ mt: 3, mb: 2 }}>
               <input
                 type="file"
+                multiple
                 ref={fileInputRef}
                 onChange={handleFileSelect}
                 style={{ display: 'none' }}
@@ -145,27 +165,33 @@ const BoardForm = () => {
                 variant="outlined"
                 startIcon={<CloudUploadIcon />}
                 onClick={() => fileInputRef.current?.click()}
-                disabled={isSubmitting}
               >
                 파일 첨부
               </Button>
-              {file && (
-                <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                  <Typography variant="body2" sx={{ mr: 1 }}>
-                    {file.name} ({(file.size / 1024 / 1024).toFixed(2)}MB)
-                  </Typography>
-                  <IconButton
-                    size="small"
-                    onClick={() => setFile(null)}
-                    disabled={isSubmitting}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </Box>
-              )}
             </Box>
 
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+            {files.length > 0 && (
+              <List>
+                {files.map((fileInfo, index) => (
+                  <ListItem key={index}>
+                    <ListItemText primary={fileInfo.name} />
+                    <ListItemSecondaryAction>
+                      <IconButton edge="end" onClick={() => handleRemoveFile(index)}>
+                        <DeleteIcon />
+                      </IconButton>
+                    </ListItemSecondaryAction>
+                  </ListItem>
+                ))}
+              </List>
+            )}
+
+            {error && (
+              <Alert severity="error" sx={{ mt: 2, mb: 2 }}>
+                {error}
+              </Alert>
+            )}
+
+            <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
               <Button
                 variant="outlined"
                 onClick={() => navigate('/board')}
@@ -177,10 +203,9 @@ const BoardForm = () => {
                 type="submit"
                 variant="contained"
                 disabled={isSubmitting}
+                startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
               >
-                {isSubmitting ? (
-                  <CircularProgress size={24} />
-                ) : '등록'}
+                {isSubmitting ? '등록 중...' : '등록하기'}
               </Button>
             </Box>
           </form>

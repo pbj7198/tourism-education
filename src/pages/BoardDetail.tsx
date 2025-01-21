@@ -13,6 +13,10 @@ import {
   Avatar,
   Menu,
   MenuItem,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -24,6 +28,8 @@ import PageTransition from '../components/PageTransition';
 import { maskUserId } from '../utils/maskUserId';
 import { Timestamp } from 'firebase/firestore';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
+import DownloadIcon from '@mui/icons-material/Download';
 
 interface BoardPost {
   id: string;
@@ -38,6 +44,10 @@ interface BoardPost {
   views: number;
   fileUrl?: string;
   fileName?: string;
+  files?: {
+    url: string;
+    name: string;
+  }[];
 }
 
 interface Comment {
@@ -277,23 +287,28 @@ const BoardDetail = () => {
           </Box>
 
           {/* 첨부파일 */}
-          {post.fileUrl && post.fileName && (
-            <Box sx={{ mb: 4, pt: 3, borderTop: '1px solid #e0e0e0' }}>
-              <Button
-                startIcon={<CloudDownloadIcon />}
-                onClick={() => {
-                  if (post.fileUrl && post.fileName) {
-                    const link = document.createElement('a');
-                    link.href = post.fileUrl;
-                    link.download = post.fileName;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                  }
-                }}
-              >
-                {post.fileName}
-              </Button>
+          {post.files && post.files.length > 0 && (
+            <Box sx={{ mt: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                첨부파일
+              </Typography>
+              <List>
+                {post.files.map((file, index) => (
+                  <ListItem key={index}>
+                    <ListItemIcon>
+                      <AttachFileIcon />
+                    </ListItemIcon>
+                    <ListItemText primary={file.name} />
+                    <IconButton 
+                      edge="end" 
+                      onClick={() => window.open(file.url, '_blank')}
+                      sx={{ color: 'primary.main' }}
+                    >
+                      <DownloadIcon />
+                    </IconButton>
+                  </ListItem>
+                ))}
+              </List>
             </Box>
           )}
 

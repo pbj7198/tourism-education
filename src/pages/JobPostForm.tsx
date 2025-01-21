@@ -9,19 +9,28 @@ import {
   Box,
   Alert,
   IconButton,
-  CircularProgress,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
   FormControlLabel,
-  Checkbox
+  Checkbox,
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
 import RichTextEditor from '../components/RichTextEditor';
 import type { Editor } from '@tinymce/tinymce-react';
+
+interface FileInfo {
+  file: File;
+  name: string;
+  url?: string;
+}
 
 const JobPostForm = () => {
   const navigate = useNavigate();
@@ -31,32 +40,38 @@ const JobPostForm = () => {
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [files, setFiles] = useState<FileInfo[]>([]);
   const [isNotice, setIsNotice] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  if (!currentUser) {
+  if (!currentUser || currentUser.role !== 'admin') {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Alert severity="error">
-          로그인이 필요한 서비스입니다.
+          관리자만 접근할 수 있습니다.
         </Alert>
       </Container>
     );
   }
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const selectedFile = e.target.files[0];
-      // 파일 크기 제한 (50MB)
-      if (selectedFile.size > 50 * 1024 * 1024) {
-        setError('파일 크기는 50MB를 초과할 수 없습니다.');
-        return;
-      }
-      setFile(selectedFile);
-      setError('');
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = event.target.files;
+    if (selectedFiles) {
+      const newFiles = Array.from(selectedFiles).map(file => ({
+        file,
+        name: file.name
+      }));
+      setFiles(prev => [...prev, ...newFiles]);
     }
+    // 파일 선택 후 input 초기화
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setFiles(files.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -71,15 +86,17 @@ const JobPostForm = () => {
       setIsSubmitting(true);
       setError('');
 
-      let fileUrl = '';
-      let fileName = '';
+      const uploadPromises = files.map(async (fileInfo) => {
+        const fileRef = ref(storage, `jobs/${Date.now()}_${fileInfo.name}`);
+        await uploadBytes(fileRef, fileInfo.file);
+        const url = await getDownloadURL(fileRef);
+        return {
+          name: fileInfo.name,
+          url: url
+        };
+      });
 
-      if (file) {
-        const fileRef = ref(storage, `job_posts/${Date.now()}_${file.name}`);
-        await uploadBytes(fileRef, file);
-        fileUrl = await getDownloadURL(fileRef);
-        fileName = file.name;
-      }
+      const uploadedFiles = await Promise.all(uploadPromises);
 
       const docRef = await addDoc(collection(db, 'job_posts'), {
         title,
@@ -89,11 +106,10 @@ const JobPostForm = () => {
           email: currentUser.email,
           name: currentUser.email?.split('@')[0] || '익명'
         },
-        createdAt: serverTimestamp(),
+        createdAt: Timestamp.now(),
         views: 0,
         isNotice,
-        fileUrl,
-        fileName
+        files: uploadedFiles
       });
 
       navigate(`/jobs/${docRef.id}`);
@@ -120,6 +136,18 @@ const JobPostForm = () => {
           )}
 
           <form onSubmit={handleSubmit}>
+            <Box sx={{ mb: 3 }}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={isNotice}
+                    onChange={(e) => setIsNotice(e.target.checked)}
+                  />
+                }
+                label="공지로 등록"
+              />
+            </Box>
+
             <TextField
               fullWidth
               label="제목"
@@ -127,17 +155,6 @@ const JobPostForm = () => {
               onChange={(e) => setTitle(e.target.value)}
               margin="normal"
               required
-            />
-
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={isNotice}
-                  onChange={(e) => setIsNotice(e.target.checked)}
-                />
-              }
-              label="공지로 등록"
-              sx={{ my: 1 }}
             />
 
             <Box sx={{ mt: 3, mb: 3 }}>
@@ -152,9 +169,10 @@ const JobPostForm = () => {
             <Box sx={{ mt: 3, mb: 2 }}>
               <input
                 type="file"
-                ref={fileInputRef}
-                onChange={handleFileSelect}
+                multiple
+                onChange={handleFileChange}
                 style={{ display: 'none' }}
+                ref={fileInputRef}
               />
               <Button
                 variant="outlined"
@@ -164,21 +182,27 @@ const JobPostForm = () => {
               >
                 파일 첨부
               </Button>
-              {file && (
-                <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                  <Typography variant="body2" sx={{ mr: 1 }}>
-                    {file.name} ({(file.size / 1024 / 1024).toFixed(2)}MB)
-                  </Typography>
-                  <IconButton
-                    size="small"
-                    onClick={() => setFile(null)}
-                    disabled={isSubmitting}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </Box>
-              )}
             </Box>
+
+            {files.length > 0 && (
+              <List>
+                {files.map((file, index) => (
+                  <ListItem key={index}>
+                    <ListItemText primary={file.name} />
+                    <ListItemSecondaryAction>
+                      <IconButton
+                        edge="end"
+                        aria-label="delete"
+                        onClick={() => handleRemoveFile(index)}
+                        disabled={isSubmitting}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </ListItemSecondaryAction>
+                  </ListItem>
+                ))}
+              </List>
+            )}
 
             <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
               <Button
@@ -193,9 +217,7 @@ const JobPostForm = () => {
                 variant="contained"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? (
-                  <CircularProgress size={24} />
-                ) : '등록'}
+                등록
               </Button>
             </Box>
           </form>

@@ -14,11 +14,17 @@ import {
   Menu,
   MenuItem,
   CircularProgress,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Link,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DownloadIcon from '@mui/icons-material/Download';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
 import { doc, getDoc, deleteDoc, updateDoc, increment, collection, addDoc, onSnapshot, query, orderBy, Timestamp } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { db, storage } from '../firebase';
@@ -26,35 +32,32 @@ import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
 import { maskUserId } from '../utils/maskUserId';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
+import { formatDate } from '../utils/formatDate';
 
-interface MaterialPost {
+interface FileData {
+  name: string;
+  url: string;
+}
+
+interface Material {
   id: string;
   title: string;
   content: string;
   author: {
     id: string;
-    email: string | null;
+    email: string;
     name: string;
   };
-  createdAt: string | Timestamp;
+  createdAt: any;
   views: number;
-  fileUrl?: string;
-  fileName?: string;
-}
-
-interface Comment {
-  id: string;
-  content: string;
-  author: string;
-  authorId: string;
-  createdAt: string;
+  files: FileData[];
 }
 
 const MaterialDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const [post, setPost] = useState<MaterialPost | null>(null);
+  const [material, setMaterial] = useState<Material | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [comments, setComments] = useState<Comment[]>([]);
@@ -66,13 +69,9 @@ const MaterialDetail = () => {
   const [selectedCommentId, setSelectedCommentId] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchPost = async () => {
-      if (!id) {
-        setError('게시글 ID가 유효하지 않습니다.');
-        return;
-      }
-
+    const fetchMaterial = async () => {
       try {
+        if (!id) return;
         const docRef = doc(db, 'teaching_materials', id);
         const docSnap = await getDoc(docRef);
         
@@ -81,21 +80,24 @@ const MaterialDetail = () => {
           await updateDoc(docRef, {
             views: increment(1)
           });
-          
-          setPost({ id: docSnap.id, ...docSnap.data() } as MaterialPost);
+
+          setMaterial({
+            id: docSnap.id,
+            ...docSnap.data()
+          } as Material);
           setLoading(false);
         } else {
           setError('게시글을 찾을 수 없습니다.');
           setLoading(false);
         }
       } catch (error) {
-        console.error('Error fetching post:', error);
+        console.error('Error fetching material:', error);
         setError('게시글을 불러오는데 실패했습니다.');
         setLoading(false);
       }
     };
 
-    fetchPost();
+    fetchMaterial();
   }, [id]);
 
   useEffect(() => {
@@ -118,12 +120,12 @@ const MaterialDetail = () => {
   }, [id]);
 
   const handleDelete = async () => {
-    if (!id || !post || !currentUser) {
+    if (!id || !material || !currentUser) {
       return;
     }
 
     // 작성자이거나 관리자인 경우에만 삭제 가능
-    if (currentUser.id !== post.author.id && currentUser.role !== 'admin') {
+    if (currentUser.id !== material.author.id && currentUser.role !== 'admin') {
       return;
     }
 
@@ -135,28 +137,21 @@ const MaterialDetail = () => {
       await deleteDoc(doc(db, 'teaching_materials', id));
       
       // 첨부 파일이 있는 경우 Storage에서도 삭제
-      if (post.fileUrl) {
-        const fileRef = ref(storage, post.fileUrl);
-        await deleteObject(fileRef);
+      if (material.files && material.files.length > 0) {
+        for (const file of material.files) {
+          const fileRef = ref(storage, file.url);
+          try {
+            await deleteObject(fileRef);
+          } catch (error) {
+            console.error('Error deleting file:', error);
+          }
+        }
       }
       
       navigate('/materials');
     } catch (error) {
-      console.error('Error deleting post:', error);
+      console.error('Error deleting material:', error);
       setError('게시글 삭제에 실패했습니다.');
-    }
-  };
-
-  const handleDownload = () => {
-    if (post?.fileUrl) {
-      const fileName = post.fileName || '다운로드파일';
-      
-      const link = document.createElement('a');
-      link.href = post.fileUrl;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
     }
   };
 
@@ -228,11 +223,13 @@ const MaterialDetail = () => {
     }
   };
 
-  const formatDate = (date: string | Timestamp) => {
-    if (date instanceof Timestamp) {
-      return date.toDate().toLocaleDateString('ko-KR');
-    }
-    return new Date(date).toLocaleDateString('ko-KR');
+  const handleFileDownload = (url: string, fileName: string) => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   if (loading) {
@@ -251,7 +248,7 @@ const MaterialDetail = () => {
     );
   }
 
-  if (!post) {
+  if (!material) {
     return (
       <Container maxWidth="lg" sx={{ py: 6 }}>
         <Alert severity="info">게시글을 찾을 수 없습니다.</Alert>
@@ -263,53 +260,84 @@ const MaterialDetail = () => {
     <PageTransition>
       <Container maxWidth="lg" sx={{ py: 6 }}>
         <Paper elevation={0} sx={{ p: 4, borderRadius: '12px', border: '1px solid #e0e0e0' }}>
-          {/* 게시글 헤더 */}
-          <Box sx={{ mb: 4, borderBottom: '1px solid #e0e0e0', pb: 3 }}>
-            <Typography variant="h5" component="h1" gutterBottom sx={{ mb: 2 }}>
-              {post.title}
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 2, color: '#666', fontSize: '0.9rem' }}>
-              <Box>작성자: {maskUserId(post.author.email)}</Box>
-              <Divider orientation="vertical" flexItem />
-              <Box>작성일: {formatDate(post.createdAt)}</Box>
-              <Divider orientation="vertical" flexItem />
-              <Box>조회수: {post.views}</Box>
+          <Typography variant="h5" component="h1" gutterBottom>
+            {material.title}
+          </Typography>
+
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Box>
+              <Typography variant="body2" color="text.secondary">
+                작성자: {maskUserId(material.author.email)}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                작성일: {formatDate(material.createdAt)}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                조회수: {material.views}
+              </Typography>
             </Box>
+
+            {currentUser?.role === 'admin' && (
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  variant="outlined"
+                  startIcon={<EditIcon />}
+                  onClick={() => navigate(`/materials/edit/${id}`)}
+                >
+                  수정
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  startIcon={<DeleteIcon />}
+                  onClick={handleDelete}
+                >
+                  삭제
+                </Button>
+              </Box>
+            )}
           </Box>
 
-          {/* 게시글 본문 */}
-          <Box sx={{ mb: 4, minHeight: '200px' }}>
-            <div dangerouslySetInnerHTML={{ __html: post.content }} />
+          <Divider sx={{ my: 3 }} />
+
+          <Box sx={{ mb: 4 }}>
+            <div dangerouslySetInnerHTML={{ __html: material.content }} />
           </Box>
 
-          {/* 첨부파일 */}
-          {post.fileUrl && post.fileName && (
-            <Box sx={{ mb: 4, pt: 3, borderTop: '1px solid #e0e0e0' }}>
-              <Button
-                startIcon={<CloudDownloadIcon />}
-                onClick={handleDownload}
-              >
-                {post.fileName}
-              </Button>
-            </Box>
-          )}
-
-          {/* 작성자 또는 관리자 액션 버튼 */}
-          {currentUser && (currentUser.id === post.author.id || currentUser.role === 'admin') && (
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', pt: 3, borderTop: '1px solid #e0e0e0' }}>
-              <Button
-                variant="outlined"
-                onClick={() => navigate(`/materials/${id}/edit`)}
-              >
-                수정
-              </Button>
-              <Button
-                variant="outlined"
-                color="error"
-                onClick={handleDelete}
-              >
-                삭제
-              </Button>
+          {material.files && material.files.length > 0 && (
+            <Box sx={{ mt: 4 }}>
+              <Typography variant="h6" gutterBottom>
+                첨부파일
+              </Typography>
+              <List>
+                {material.files.map((file, index) => (
+                  <ListItem 
+                    key={index} 
+                    sx={{ 
+                      px: 2, 
+                      py: 1, 
+                      '&:hover': { 
+                        backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                        cursor: 'pointer'
+                      }
+                    }}
+                    onClick={() => handleFileDownload(file.url, file.name)}
+                  >
+                    <ListItemIcon>
+                      <AttachFileIcon />
+                    </ListItemIcon>
+                    <ListItemText 
+                      primary={file.name}
+                      sx={{ 
+                        '& .MuiListItemText-primary': { 
+                          color: 'primary.main',
+                          textDecoration: 'underline'
+                        }
+                      }}
+                    />
+                  </ListItem>
+                ))}
+              </List>
             </Box>
           )}
 

@@ -13,17 +13,28 @@ import {
   Avatar,
   Menu,
   MenuItem,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
 import { doc, getDoc, deleteDoc, updateDoc, increment, collection, addDoc, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { db } from '../firebase';
+import { ref, deleteObject } from 'firebase/storage';
+import { db, storage } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import PageTransition from '../components/PageTransition';
 import { maskUserId } from '../utils/maskUserId';
 import { Timestamp } from 'firebase/firestore';
-import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
+import { formatDate } from '../utils/formatDate';
+
+interface FileData {
+  name: string;
+  url: string;
+}
 
 interface JobPost {
   id: string;
@@ -34,10 +45,12 @@ interface JobPost {
     email: string | null;
     name: string;
   };
-  createdAt: string | Timestamp;
+  createdAt: Timestamp;
   views: number;
   fileUrl?: string;
   fileName?: string;
+  isNotice?: boolean;
+  files?: FileData[];
 }
 
 interface Comment {
@@ -64,21 +77,24 @@ const JobPostDetail = () => {
 
   useEffect(() => {
     const fetchPost = async () => {
-      if (!id) {
-        setError('게시글 ID가 유효하지 않습니다.');
-        return;
-      }
-
       try {
+        if (!id) return;
         const docRef = doc(db, 'job_posts', id);
         const docSnap = await getDoc(docRef);
         
         if (docSnap.exists()) {
+          // 조회수 증가
           await updateDoc(docRef, {
             views: increment(1)
           });
-          
-          setPost({ id: docSnap.id, ...docSnap.data() } as JobPost);
+
+          const postData = docSnap.data();
+          setPost({
+            id: docSnap.id,
+            ...postData,
+            files: postData.files || [], // 명시적으로 files 배열 처리
+            createdAt: postData.createdAt as Timestamp
+          } as JobPost);
         } else {
           setError('게시글을 찾을 수 없습니다.');
         }
@@ -129,6 +145,18 @@ const JobPostDetail = () => {
     }
 
     try {
+      // 첨부 파일이 있는 경우 Storage에서도 삭제
+      if (post.files && post.files.length > 0) {
+        for (const file of post.files) {
+          const fileRef = ref(storage, file.url);
+          try {
+            await deleteObject(fileRef);
+          } catch (error) {
+            console.error('Error deleting file:', error);
+          }
+        }
+      }
+
       await deleteDoc(doc(db, 'job_posts', id));
       navigate('/jobs');
     } catch (error) {
@@ -205,35 +233,13 @@ const JobPostDetail = () => {
     }
   };
 
-  const formatDate = (date: string | Timestamp) => {
-    if (date instanceof Timestamp) {
-      return date.toDate().toLocaleDateString('ko-KR');
-    }
-    return new Date(date).toLocaleDateString('ko-KR');
-  };
-
-  // URL을 하이퍼링크로 변환하는 함수 추가
-  const convertUrlsToLinks = (text: string) => {
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    const parts = text.split(urlRegex);
-    
-    return parts.map((part, index) => {
-      if (part.match(urlRegex)) {
-        return (
-          <a
-            key={index}
-            href={part}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            style={{ color: '#1976d2', textDecoration: 'underline' }}
-          >
-            {part}
-          </a>
-        );
-      }
-      return part;
-    });
+  const handleFileDownload = (url: string, fileName: string) => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   if (error) {
@@ -261,9 +267,27 @@ const JobPostDetail = () => {
         <Paper elevation={0} sx={{ p: 4, borderRadius: '12px', border: '1px solid #e0e0e0' }}>
           {/* 게시글 헤더 */}
           <Box sx={{ mb: 4, borderBottom: '1px solid #e0e0e0', pb: 3 }}>
-            <Typography variant="h5" component="h1" gutterBottom sx={{ mb: 2 }}>
-              {post.title}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+              {post.isNotice && (
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: 'primary.main',
+                    fontWeight: 'bold',
+                    border: '1px solid',
+                    borderColor: 'primary.main',
+                    borderRadius: '4px',
+                    px: 1,
+                    py: 0.5,
+                  }}
+                >
+                  공지
+                </Typography>
+              )}
+              <Typography variant="h5" component="h1" gutterBottom sx={{ mb: 2 }}>
+                {post.title}
+              </Typography>
+            </Box>
             <Box sx={{ display: 'flex', gap: 2, color: '#666', fontSize: '0.9rem' }}>
               <Box>작성자: {maskUserId(post.author?.email || null)}</Box>
               <Divider orientation="vertical" flexItem />
@@ -279,23 +303,40 @@ const JobPostDetail = () => {
           </Box>
 
           {/* 첨부파일 */}
-          {post.fileUrl && post.fileName && (
+          {post.files && post.files.length > 0 && (
             <Box sx={{ mb: 4, pt: 3, borderTop: '1px solid #e0e0e0' }}>
-              <Button
-                startIcon={<CloudDownloadIcon />}
-                onClick={() => {
-                  if (post.fileUrl && post.fileName) {
-                    const link = document.createElement('a');
-                    link.href = post.fileUrl;
-                    link.download = post.fileName;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                  }
-                }}
-              >
-                {post.fileName}
-              </Button>
+              <Typography variant="h6" gutterBottom>
+                첨부파일 ({post.files.length})
+              </Typography>
+              <List>
+                {post.files.map((file, index) => (
+                  <ListItem 
+                    key={index} 
+                    sx={{ 
+                      px: 2, 
+                      py: 1, 
+                      '&:hover': { 
+                        backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                        cursor: 'pointer'
+                      }
+                    }}
+                    onClick={() => handleFileDownload(file.url, file.name)}
+                  >
+                    <ListItemIcon>
+                      <AttachFileIcon />
+                    </ListItemIcon>
+                    <ListItemText 
+                      primary={file.name}
+                      sx={{ 
+                        '& .MuiListItemText-primary': { 
+                          color: 'primary.main',
+                          textDecoration: 'underline'
+                        }
+                      }}
+                    />
+                  </ListItem>
+                ))}
+              </List>
             </Box>
           )}
 
